@@ -32,11 +32,13 @@ void main()
 		
 		if(v < r * r - r*r/2)
 		{
-			color = vec4(1, 1, 1, 0);
 			
 			if(v < r * r - r*r * 1.5/2 && checked > 0)
 			{
 				color = vec4(0, 0, 0, 0);
+			}else
+			{
+				discard;
 			}
 		}
 	}

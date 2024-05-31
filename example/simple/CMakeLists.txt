@@ -20,4 +20,5 @@ target_link_libraries(${TEMPLATE} pthread)
 target_link_libraries(${TEMPLATE} ${GLEW_LIBRARIES})
 target_link_libraries(${TEMPLATE} glfw)
 target_link_libraries(${TEMPLATE} ${OPENGL_LIBRARIES})
+target_link_libraries(${TEMPLATE} ${FREETYPE_LIBRARIES})
 

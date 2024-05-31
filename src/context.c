@@ -13,12 +13,17 @@ int nhgui_context_initialize(
 	context->height_mm = height_mm;
 	context->res_x = res_x;
 	context->res_y = res_y;
-
+	
+	/* Common surface used for rendering operations */
 	result = nhgui_surface_initialize(&context->surface);
 	if(result < 0){
 		fprintf(stderr, "nhgui_surface_initialize() failed. \n");
 		return -1;
 	}
+	
+	/* Required for the freetype font bitmap from glyph to work */
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 
 	return 0;
 }

@@ -4,8 +4,7 @@
 
 struct nhgui_render_attribute
 {
-	uint32_t height_mm;	
-
+	float height_mm;	
 };
 
 #endif 

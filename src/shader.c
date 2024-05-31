@@ -1,12 +1,60 @@
 #include "shader.h"
 
 
+
+GLuint nhgui_shader_vertex_create_from_file(
+		const char *vertex_source_filename,
+		const char *fragment_source_filename
+)
+{
+	uint8_t vertex_source[NGGUI_SHADER_FILE_MAX_SIZE];
+	uint8_t fragment_source[NGGUI_SHADER_FILE_MAX_SIZE];
+
+	uint32_t vertex_read = misc_file_read_buffer(vertex_source_filename, vertex_source, NGGUI_SHADER_FILE_MAX_SIZE);
+	if(vertex_read == 0){
+		fprintf(stderr, "Could not read file %s \n", vertex_source_filename);
+		return 0;
+	}
+
+	uint32_t fragment_read = misc_file_read_buffer(fragment_source_filename, fragment_source, NGGUI_SHADER_FILE_MAX_SIZE);
+	if(fragment_read == 0){
+		fprintf(stderr, "Could not read file %s \n", fragment_source_filename);
+		return 0;
+	}
+
+	const char *vertex_source_list[] = {
+		(const char *)vertex_source	
+	};	
+
+	int32_t vertex_source_length[] = {vertex_read};
+
+	const char *fragment_source_list[] = {
+		(const char *)fragment_source	
+	};	
+
+	int32_t fragment_source_length[] = {fragment_read};
+
+	GLuint program = nhgui_shader_vertex_create(
+			vertex_source_list, vertex_source_length, 1,
+			fragment_source_list, fragment_source_length, 1
+	);
+
+	if(program == 0)
+	{
+		fprintf(stderr, "Could not create shader program. \n");
+		return 0;	
+	
+	}
+	
+	return program;
+}
+
 GLuint nhgui_shader_vertex_create(
 		const char **vertex_source, 
-		uint32_t *vertex_source_length, 
+		int32_t *vertex_source_length, 
 		uint32_t vertex_source_count, 
 		const char **fragment_source,
-	       	uint32_t *fragment_source_length,
+	       	int32_t *fragment_source_length,
 	       	uint32_t fragment_source_count
 )
 {

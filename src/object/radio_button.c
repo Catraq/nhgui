@@ -17,13 +17,16 @@ nhgui_object_radio_button(
 	 * then calculate pixels per mm  and mutiply by cursor position.
 	 * */
 
-	uint32_t cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
-	uint32_t cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
+	float cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
+	float cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
+
+	struct nhgui_result result_tmp = result;
+	result_tmp.y_mm -= attribute->height_mm;
 	
 	/* It is a radio button. Calcaute distance from center to know if the mouse is over it */	
-	uint32_t center_x = result.x_mm + attribute->height_mm/2;
-	uint32_t center_y = result.y_mm + attribute->height_mm/2;	
-	uint32_t distance = (center_x - cursor_x_mm)*(center_x - cursor_x_mm) + (center_y - cursor_y_mm)*(center_y - cursor_y_mm);
+	float  center_x = result_tmp.x_mm + attribute->height_mm/2;
+	float  center_y = result_tmp.y_mm + attribute->height_mm/2;	
+	float  distance = (center_x - cursor_x_mm)*(center_x - cursor_x_mm) + (center_y - cursor_y_mm)*(center_y - cursor_y_mm);
 	
 	/* Keep in mind that the values are squared */
 	if(distance < attribute->height_mm*attribute->height_mm/4)
@@ -36,17 +39,16 @@ nhgui_object_radio_button(
 	
 
 
-	
+
 	/* Scale by window relative resolution and calcuate mm per 1.0 unit mul with actual height and width */	
 	float s_x = (float)context->res_x/(float)input->width * 1.0 /(float)context->width_mm * (float)attribute->height_mm;
 	float s_y = (float)context->res_y/(float)input->height * 1.0 /(float)context->height_mm * (float)attribute->height_mm;
 
-	/* Negative as we grow down. */	
-	float p_y = -(float)context->res_y/(float)input->height * 1.0/(float)context->height_mm * result.y_mm;
-	float p_x = (float)context->res_x/(float)input->width * 1.0/(float)context->width_mm * result.x_mm; ;
+	float p_y = (float)context->res_y/(float)input->height * 1.0/(float)context->height_mm * result_tmp.y_mm;
+	float p_x = (float)context->res_x/(float)input->width * 1.0/(float)context->width_mm * result_tmp.x_mm; ;
 	
 	/* Convert to gl cordinates [-1, 1] and move down with size otherwise the element will be above the screen */ 
-	p_y = 2.0 + 2.0*p_y-1.0 - 2.0*s_y;
+	p_y = 2.0*p_y-1.0;
 	p_x = 2.0*p_x-1.0;
 	
 	struct nhgui_result render_result = result;
@@ -86,11 +88,11 @@ int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instan
 	}
 
 	const char *vertex_source_list[] = {
-		vertex_source	
+		(const char*)vertex_source	
 	};	
 
 	const char *fragment_source_list[] = {
-		fragment_source	
+		(const char*)fragment_source	
 	};	
 
 	GLuint program = nhgui_shader_vertex_create(
