@@ -28,6 +28,7 @@ set(SOURCES
 	"${PROJECT_SOURCE_DIR}/src/common.c"
 	"${PROJECT_SOURCE_DIR}/src/icon/menu.c"
 	"${PROJECT_SOURCE_DIR}/src/object/radio_button.c"
+	"${PROJECT_SOURCE_DIR}/src/object/font.c"
 )
 
 
