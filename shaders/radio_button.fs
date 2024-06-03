@@ -2,7 +2,7 @@
 
 #define RADIO_BUTTON_TICKNESS radius*radius/4
 
-
+uniform vec3 color;
 uniform uint checked;
 uniform uvec2 dimension;
 
@@ -10,7 +10,7 @@ in vec2 center;
 in float radius;
 
 
-out vec4 color;
+out vec4 fcolor;
 
 void main()
 {
@@ -28,14 +28,14 @@ void main()
 
 	if(v < r*r)
 	{
-		color = vec4(0.7, 0.7, 0.7, 0);
+		fcolor = vec4(color, 0);
 		
 		if(v < r * r - r*r/2)
 		{
 			
 			if(v < r * r - r*r * 1.5/2 && checked > 0)
 			{
-				color = vec4(0, 0, 0, 0);
+				fcolor = vec4(0, 0, 0, 0);
 			}else
 			{
 				discard;
@@ -46,5 +46,3 @@ void main()
 		discard;
 
 }
-
-

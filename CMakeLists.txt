@@ -21,14 +21,7 @@ include_directories("${PROJECT_SOURCE_DIR}/include/")
 
 set(SOURCES 
 	"${PROJECT_SOURCE_DIR}/src/misc/file.c"
-	"${PROJECT_SOURCE_DIR}/src/shader.c"
-	"${PROJECT_SOURCE_DIR}/src/surface.c"
-	"${PROJECT_SOURCE_DIR}/src/context.c"
-	"${PROJECT_SOURCE_DIR}/src/result.c"
-	"${PROJECT_SOURCE_DIR}/src/common.c"
-	"${PROJECT_SOURCE_DIR}/src/icon/menu.c"
-	"${PROJECT_SOURCE_DIR}/src/object/radio_button.c"
-	"${PROJECT_SOURCE_DIR}/src/object/font.c"
+	"${PROJECT_SOURCE_DIR}/src/nhgui.c"
 )
 
 
