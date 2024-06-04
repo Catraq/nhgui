@@ -22,8 +22,10 @@ include_directories("${PROJECT_SOURCE_DIR}/include/")
 set(SOURCES 
 	"${PROJECT_SOURCE_DIR}/src/misc/file.c"
 	"${PROJECT_SOURCE_DIR}/src/nhgui.c"
+	"${PROJECT_SOURCE_DIR}/src/nhgui_glfw.c"
 )
 
 
-add_subdirectory(example/simple)
+#add_subdirectory(example/simple)
+add_subdirectory(example/list)
 

@@ -153,7 +153,7 @@ nhgui_common_uniform_locations_find(struct nhgui_common_uniform_locations *locat
 }
 
 void
-nhgui_common_uniform_locations_set(struct nhgui_common_uniform_locations *locations, struct nhgui_context *context, struct nhgui_input *input, struct nhgui_result result, uint32_t width_mm, uint32_t height_mm, float r, float g, float b)
+nhgui_common_uniform_locations_set(struct nhgui_common_uniform_locations *locations, struct nhgui_context *context, struct nhgui_input *input, struct nhgui_result result, float width_mm, float height_mm, float r, float g, float b)
 {
 	/* Scale by window relative resolution and calcuate mm per 1.0 unit mul with actual height and width */	
 	float s_x = (float)context->res_x/(float)input->width * 1.0 /(float)context->width_mm * width_mm;
@@ -437,20 +437,20 @@ void nhgui_surface_render_instanced(struct nhgui_surface *nhgui_surface, uint32_
 
 
 struct nhgui_result 
-nhgui_icon_blank(
+nhgui_icon_blank_no_object(
 		struct nhgui_context *context, 
 		struct nhgui_render_attribute *attribute,
 		struct nhgui_input *input, 
 		struct nhgui_result result
 )
 {
-	
 	struct nhgui_icon_blank_instance *instance = &context->blank;
 
-	glUseProgram(instance->program);	
-	
+
 	struct nhgui_result result_tmp = result;
 	result_tmp.y_mm -= attribute->height_mm;
+
+	glUseProgram(instance->program);	
 
 	nhgui_common_uniform_locations_set(
 			&instance->locations,
@@ -463,8 +463,79 @@ nhgui_icon_blank(
 
 	nhgui_surface_render(&context->surface);
 
-	result.y_inc_next += attribute->height_mm;
-	result.x_inc_next += attribute->width_mm;
+	result.y_inc_next = attribute->height_mm;
+	result.x_inc_next = attribute->width_mm;
+
+	return result;
+}
+
+struct nhgui_result 
+nhgui_icon_blank(
+		struct nhgui_context *context, 
+		struct nhgui_icon_blank_object *blank,
+		struct nhgui_render_attribute *attribute,
+		struct nhgui_input *input, 
+		struct nhgui_result result
+)
+{
+	struct nhgui_icon_blank_instance *instance = &context->blank;
+
+	float cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
+	float cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
+	
+	struct nhgui_result result_tmp = result;
+	result_tmp.y_mm -= attribute->height_mm;
+
+	if(input->cursor_button_left > 0)
+	{
+		if(cursor_x_mm > result_tmp.x_mm && cursor_x_mm < result_tmp.x_mm + attribute->width_mm 
+		&& cursor_y_mm > result_tmp.y_mm && cursor_y_mm < result_tmp.y_mm + attribute->height_mm)
+		{
+			blank->clicked = blank->clicked ? 0 : 1;
+		}	
+	
+	}
+
+
+	if(blank->selected_prev > 0)
+	{
+		blank->selected_prev = 0;
+	}
+	else if(input->selected_new > 0)
+	{
+		blank->selected = 0;	
+	}	
+	else if(input->cursor_button_left > 0)
+	{
+		if(cursor_x_mm > result_tmp.x_mm && cursor_x_mm < result_tmp.x_mm + attribute->width_mm 
+		&& cursor_y_mm > result_tmp.y_mm && cursor_y_mm < result_tmp.y_mm + attribute->height_mm)
+		{
+			blank->selected = blank->selected ? 0 : 1;
+			blank->selected_prev = blank->selected;
+
+			if(blank->selected > 0){
+				input->selected_new_raise = 1;	
+			}
+		}	
+	
+	}
+	
+
+	glUseProgram(instance->program);	
+
+	nhgui_common_uniform_locations_set(
+			&instance->locations,
+		       	context,
+		       	input,
+		       	result_tmp,
+		       	attribute->width_mm, attribute->height_mm,
+			attribute->r, attribute->g, attribute->b
+	);
+
+	nhgui_surface_render(&context->surface);
+
+	result.y_inc_next = attribute->height_mm;
+	result.x_inc_next = attribute->width_mm;
 
 	return result;
 }
@@ -713,6 +784,116 @@ nhgui_icon_text_cursor_deinitialize(struct nhgui_icon_text_cursor_instance *inst
 }
 
 
+struct nhgui_result 
+nhgui_object_input_field(
+		struct nhgui_context *context,
+		struct nhgui_object_input_field *field,
+		struct nhgui_object_font_character character[128], 
+		struct nhgui_render_attribute *attribute,
+		struct nhgui_input *input, 
+		struct nhgui_result result,
+		char *input_buffer, 
+		uint32_t *input_buffer_length,
+		uint32_t input_buffer_size
+)
+{
+
+	
+	
+
+	struct nhgui_render_attribute blank_attribute = 
+	{
+		.width_mm = field->width_mm,
+		.height_mm = attribute->height_mm,	
+	};
+	/* Background of the input field */
+	struct nhgui_result ret = nhgui_icon_blank(
+			context,
+			&field->blank_object,
+			&blank_attribute,
+			input,
+			result
+	);
+	
+	if(field->blank_object.selected > 0)
+	{
+		/* Search input */
+		if(input->key_backspace_state  > 0){
+			if(*input_buffer_length > 0)
+			{
+				*input_buffer_length -= 1;	
+			}
+		}
+		else if(input->input_length > 0)
+		{
+			uint32_t space = input_buffer_size - *input_buffer_length; 
+			uint32_t count = space < input->input_length ? space : input->input_length;
+			memcpy(&input_buffer[*input_buffer_length], input->input, count);
+			*input_buffer_length += count;
+			
+		}	
+	}
+
+
+	/* Find result that is past the last character and 
+	 * determine if any characets leaks past the input 
+	 * box. Note that the cursor is a character*/
+	struct nhgui_result res = result;
+	uint32_t count = *input_buffer_length < input_buffer_size ? *input_buffer_length : input_buffer_size;
+
+	float x_mm = 0.0f;
+	uint32_t overflow_count = 0;
+	for(uint32_t i = 0; i < count; i++)
+	{
+		unsigned char c = input_buffer[i];
+		float ratio = attribute->height_mm/character[c].height_mm;
+		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
+		
+		float cursor_mm = attribute->height_mm;
+		float new_x_mm = x_mm + (float)(character[c].advance_x >> 6) * mm_per_pixel_x + cursor_mm;
+		/* See if it is past the boudning box */
+		if(res.x_mm + new_x_mm > ret.x_mm + ret.x_inc_next)
+		{
+			overflow_count++;		
+		}
+		else{
+			x_mm += (character[c].advance_x >> 6) * mm_per_pixel_x;
+		}
+	}
+	res.x_mm += x_mm;
+	
+	struct nhgui_render_attribute font_attribute = 
+	{
+		.height_mm = attribute->height_mm,
+		.r = 1.0f,	
+		.g = 1.0f, 
+		.b = 1.0f
+	};
+
+	/* This is cursor placed behind the text */
+	if(field->blank_object.selected > 0)
+	{
+		nhgui_icon_text_cursor(
+				context,
+				&font_attribute,
+				input,
+				res
+		);
+	}
+
+	nhgui_object_font_text(
+			context, 
+			character, 
+			&input_buffer[overflow_count],
+			*input_buffer_length - overflow_count,
+			&font_attribute,
+			input, 
+			result
+	);
+	
+	return ret;
+
+}
 int 
 nhgui_object_font_freetype_initialize(struct nhgui_object_font_freetype *freetype)
 {
@@ -776,6 +957,7 @@ nhgui_object_font_freetype_characters_initialize(
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		character[i].texture = texture[i];
+		character[i].height_mm = attribute->height_mm;
 		character[i].width = face->glyph->bitmap.width;
 		character[i].height = face->glyph->bitmap.rows;
 		character[i].bearing_x = face->glyph->bitmap_left;
@@ -869,6 +1051,7 @@ nhgui_object_font_text_result_centered_by_previous_x(
 		struct nhgui_result result,
 		struct nhgui_context *context, 
 		struct nhgui_object_font_character character[128],
+		struct nhgui_render_attribute *attribute,
 		const char *text,
 		uint32_t text_length
 )
@@ -880,7 +1063,8 @@ nhgui_object_font_text_result_centered_by_previous_x(
 	for(uint32_t i = 0; i < text_length; i++)
 	{
 		unsigned char c = text[i];
-		float mm_per_pixel_x = (float)context->width_mm/(float)context->res_x;
+		float ratio = attribute->height_mm/character[c].height_mm;
+		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
 
 		if(i != text_length-1)
 			x_mm += (character[c].advance_x >> 6) * mm_per_pixel_x;
@@ -890,6 +1074,29 @@ nhgui_object_font_text_result_centered_by_previous_x(
 }
 
 
+float 
+nhgui_object_font_text_delta_y_max(
+		struct nhgui_context *context, 
+		struct nhgui_object_font_character character[128],
+		struct nhgui_render_attribute *attribute,
+		const char *text, 
+		uint32_t text_length
+)
+{
+	float delta_y_max = 0;	
+	for(uint32_t i = 0; i < text_length; i++)
+	{	
+		unsigned char c = (unsigned char)text[i];
+		float ratio = attribute->height_mm/character[c].height_mm;
+		float mm_per_pixel_y = ratio * (float)context->height_mm/(float)context->res_y;
+
+		float delta  = character[c].height * mm_per_pixel_y;
+		
+		delta_y_max = delta_y_max < delta ? delta : delta_y_max;
+	}
+
+	return delta_y_max;
+}
 
 struct nhgui_result
 nhgui_object_font_text(
@@ -908,17 +1115,13 @@ nhgui_object_font_text(
 
 	struct nhgui_object_font_text_instance *instance = &context->font;
 
-	float delta_y_max = 0;	
-	for(uint32_t i = 0; i < text_length; i++)
-	{	
-		unsigned char c = (unsigned char)text[i];
-		float mm_per_pixel_y = (float)context->height_mm/(float)context->res_y;
-
-		float delta  = character[c].height * mm_per_pixel_y;
-		
-		delta_y_max = delta_y_max < delta ? delta : delta_y_max;
-	}
-
+	float delta_y_max = nhgui_object_font_text_delta_y_max(
+			context,
+			character,
+			attribute, 
+			text,
+			text_length
+	);
 
 
 	glEnable(GL_BLEND);
@@ -931,11 +1134,13 @@ nhgui_object_font_text(
 	{	
 		unsigned char c = (unsigned char)text[i];
 
-		float mm_per_pixel_x = (float)context->width_mm/(float)context->res_x;
-		float mm_per_pixel_y = (float)context->height_mm/(float)context->res_y;
+		float ratio = attribute->height_mm/character[c].height_mm;
 
-		float width_mm = character[c].width * mm_per_pixel_x;
-		float height_mm = character[c].height * mm_per_pixel_y;
+		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
+		float mm_per_pixel_y = ratio * (float)context->height_mm/(float)context->res_y;
+		
+		float width_mm = (float)character[c].width * mm_per_pixel_x;
+		float height_mm = (float)character[c].height * mm_per_pixel_y;
 		
 		struct nhgui_result result_tmp;	
 		result_tmp.x_mm = result.x_mm + character[c].bearing_x * mm_per_pixel_x;

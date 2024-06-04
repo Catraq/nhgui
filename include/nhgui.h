@@ -12,6 +12,7 @@
 
 #include "misc/file.h"
 
+#define NHGUI_INPUT_MAX 32
 #define NGGUI_SHADER_FILE_MAX_SIZE 8192
 
 struct nhgui_render_attribute
@@ -64,9 +65,16 @@ struct nhgui_input
 	/* Secounds since application start */
 	float time;
 	
-	/* Set this if a new element have been selected.
-	 * Used to deselect previous selected. */
+	/* > 0 then deselect selected. */
 	uint32_t selected_new;
+
+	/* >  0 then next iteration will selected_new be 1 */
+	uint32_t selected_new_raise;
+	
+	/* Input from keyboard */	
+	char input[NHGUI_INPUT_MAX];
+	uint32_t input_length;
+
 
 };
 
@@ -126,6 +134,8 @@ struct nhgui_object_font_character
 	/* Opengl texture object */
 	GLuint texture;
 	
+	/* Desired height in mm */
+	float height_mm;	
 
 	/* Width and height of character in pixels */
 	uint32_t width;
@@ -160,14 +170,20 @@ struct nhgui_object_radio_button_object
 	uint8_t checked;
 };
 
+struct nhgui_icon_blank_object
+{
+	uint8_t selected;
+	uint8_t selected_prev;
+
+	uint8_t clicked;	
+};
+
 struct nhgui_object_input_field
 {
-	/* > 0 If the input field is selected */
-	uint8_t selected;
-
-	/* > 0 if the input filed was most recently selected */
-	uint8_t selected_prev;
+	/* Width of the input field */
+	float width_mm;
 	
+	struct nhgui_icon_blank_object blank_object;	
 };
 
 
@@ -240,7 +256,7 @@ void nhgui_common_uniform_locations_set(
 	       	struct nhgui_context *context,
 	       	struct nhgui_input *input,
 	       	struct nhgui_result result,
-	       	uint32_t width_mm, uint32_t height_mm,
+	       	float width_mm, float height_mm,
 		float r, float g, float  b
 );
 int nhgui_surface_initialize(
@@ -261,8 +277,30 @@ void nhgui_surface_render_instanced(
 );
 
 struct nhgui_result 
+nhgui_object_input_field(
+		struct nhgui_context *context,
+		struct nhgui_object_input_field *field,
+		struct nhgui_object_font_character character[128], 
+		struct nhgui_render_attribute *attribute,
+		struct nhgui_input *input, 
+		struct nhgui_result result,
+		char *input_buffer, 
+		uint32_t *input_buffer_length,
+		uint32_t input_buffer_size
+)
+	;
+struct nhgui_result 
+nhgui_icon_blank_no_object(
+		struct nhgui_context *context, 
+		struct nhgui_render_attribute *attribute,
+		struct nhgui_input *input, 
+		struct nhgui_result result
+);
+
+struct nhgui_result 
 nhgui_icon_blank(
 		struct nhgui_context *context, 
+		struct nhgui_icon_blank_object *blank,
 		struct nhgui_render_attribute *attribute,
 		struct nhgui_input *input, 
 		struct nhgui_result result
@@ -343,11 +381,21 @@ nhgui_object_font_text_result_centered_by_previous_x(
 		struct nhgui_result result,
 		struct nhgui_context *context, 
 		struct nhgui_object_font_character character[128],
+		struct nhgui_render_attribute *attribute,
 		const char *text,
 		uint32_t text_length
 );
 
 
+
+float 
+nhgui_object_font_text_delta_y_max(
+		struct nhgui_context *context, 
+		struct nhgui_object_font_character character[128],
+		struct nhgui_render_attribute *attribute,
+		const char *text, 
+		uint32_t text_length 
+);
 
 struct nhgui_result
 nhgui_object_font_text(
