@@ -12,6 +12,8 @@
 
 #include "misc/file.h"
 
+#include "math/vec.h"
+
 #define NHGUI_INPUT_MAX 32
 #define NGGUI_SHADER_FILE_MAX_SIZE 8192
 
@@ -147,6 +149,12 @@ struct nhgui_object_font_character
 	uint32_t advance_x;	
 };
 
+struct nhgui_object_font
+{
+	float height_mm;
+	struct nhgui_object_font_character character[128];
+};
+
 
 struct nhgui_object_font_text_instance 
 {
@@ -182,7 +190,11 @@ struct nhgui_object_input_field
 {
 	/* Width of the input field */
 	float width_mm;
+
+	/* background color of the field */
+	struct vec3 field_color;
 	
+	/* Used for input */	
 	struct nhgui_icon_blank_object blank_object;	
 };
 
@@ -280,7 +292,7 @@ struct nhgui_result
 nhgui_object_input_field(
 		struct nhgui_context *context,
 		struct nhgui_object_input_field *field,
-		struct nhgui_object_font_character character[128], 
+		struct nhgui_object_font *font,
 		struct nhgui_render_attribute *attribute,
 		struct nhgui_input *input, 
 		struct nhgui_result result,
@@ -361,13 +373,13 @@ nhgui_object_font_freetype_characters_initialize(
 		struct nhgui_object_font_freetype *freetype,
 		struct nhgui_context *context,
 		struct nhgui_render_attribute *attribute,
-	       	struct nhgui_object_font_character character[128], 
+	       	struct nhgui_object_font *font, 
 	       	const char *filename
 );
 
 void 
 nhgui_object_font_freetype_characters_deinitialize(
-	       	struct nhgui_object_font_character character[128]
+	       	struct nhgui_object_font *font
 );
 
 int 
@@ -380,7 +392,7 @@ struct nhgui_result
 nhgui_object_font_text_result_centered_by_previous_x(
 		struct nhgui_result result,
 		struct nhgui_context *context, 
-		struct nhgui_object_font_character character[128],
+		struct nhgui_object_font *font,
 		struct nhgui_render_attribute *attribute,
 		const char *text,
 		uint32_t text_length
@@ -391,7 +403,7 @@ nhgui_object_font_text_result_centered_by_previous_x(
 float 
 nhgui_object_font_text_delta_y_max(
 		struct nhgui_context *context, 
-		struct nhgui_object_font_character character[128],
+		struct nhgui_object_font *font,
 		struct nhgui_render_attribute *attribute,
 		const char *text, 
 		uint32_t text_length 
@@ -400,7 +412,7 @@ nhgui_object_font_text_delta_y_max(
 struct nhgui_result
 nhgui_object_font_text(
 		struct nhgui_context *context, 
-		struct nhgui_object_font_character character[128], 
+		struct nhgui_object_font *font,
 		const char *text, 
 		uint32_t text_length, 
 		struct nhgui_render_attribute *attribute,

@@ -788,7 +788,7 @@ struct nhgui_result
 nhgui_object_input_field(
 		struct nhgui_context *context,
 		struct nhgui_object_input_field *field,
-		struct nhgui_object_font_character character[128], 
+		struct nhgui_object_font *font,
 		struct nhgui_render_attribute *attribute,
 		struct nhgui_input *input, 
 		struct nhgui_result result,
@@ -805,6 +805,9 @@ nhgui_object_input_field(
 	{
 		.width_mm = field->width_mm,
 		.height_mm = attribute->height_mm,	
+		.r = field->field_color.x,
+		.g = field->field_color.y,
+		.b = field->field_color.z,
 	};
 	/* Background of the input field */
 	struct nhgui_result ret = nhgui_icon_blank(
@@ -846,18 +849,18 @@ nhgui_object_input_field(
 	for(uint32_t i = 0; i < count; i++)
 	{
 		unsigned char c = input_buffer[i];
-		float ratio = attribute->height_mm/character[c].height_mm;
+		float ratio = attribute->height_mm/font->height_mm;
 		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
 		
 		float cursor_mm = attribute->height_mm;
-		float new_x_mm = x_mm + (float)(character[c].advance_x >> 6) * mm_per_pixel_x + cursor_mm;
+		float new_x_mm = x_mm + (float)(font->character[c].advance_x >> 6) * mm_per_pixel_x + cursor_mm;
 		/* See if it is past the boudning box */
 		if(res.x_mm + new_x_mm > ret.x_mm + ret.x_inc_next)
 		{
 			overflow_count++;		
 		}
 		else{
-			x_mm += (character[c].advance_x >> 6) * mm_per_pixel_x;
+			x_mm += (font->character[c].advance_x >> 6) * mm_per_pixel_x;
 		}
 	}
 	res.x_mm += x_mm;
@@ -883,7 +886,7 @@ nhgui_object_input_field(
 
 	nhgui_object_font_text(
 			context, 
-			character, 
+			font, 
 			&input_buffer[overflow_count],
 			*input_buffer_length - overflow_count,
 			&font_attribute,
@@ -917,7 +920,7 @@ nhgui_object_font_freetype_characters_initialize(
 		struct nhgui_object_font_freetype *freetype,
 		struct nhgui_context *context,
 		struct nhgui_render_attribute *attribute,
-	       	struct nhgui_object_font_character character[128], 
+	       	struct nhgui_object_font *font,
 	       	const char *filename
 )
 {
@@ -932,6 +935,8 @@ nhgui_object_font_freetype_characters_initialize(
 	 * scaled depending on chracter */	
 	uint32_t pixels_per_mm = context->res_y/context->height_mm;
 	FT_Set_Pixel_Sizes(face, 0, attribute->height_mm * pixels_per_mm);
+
+	font->height_mm = attribute->height_mm;
 	
 	/* Allocate chunck for easier clenup in case of error */	
 	GLuint texture[128];
@@ -956,13 +961,12 @@ nhgui_object_font_freetype_characters_initialize(
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		character[i].texture = texture[i];
-		character[i].height_mm = attribute->height_mm;
-		character[i].width = face->glyph->bitmap.width;
-		character[i].height = face->glyph->bitmap.rows;
-		character[i].bearing_x = face->glyph->bitmap_left;
-		character[i].bearing_y = face->glyph->bitmap_top;
-		character[i].advance_x = face->glyph->advance.x;
+		font->character[i].texture = texture[i];
+		font->character[i].width = face->glyph->bitmap.width;
+		font->character[i].height = face->glyph->bitmap.rows;
+		font->character[i].bearing_x = face->glyph->bitmap_left;
+		font->character[i].bearing_y = face->glyph->bitmap_top;
+		font->character[i].advance_x = face->glyph->advance.x;
 
 	}
 	
@@ -973,12 +977,12 @@ nhgui_object_font_freetype_characters_initialize(
 
 void 
 nhgui_object_font_freetype_characters_deinitialize(
-	       	struct nhgui_object_font_character character[128]
+	       	struct nhgui_object_font *font
 )
 {
 	for(uint32_t i = 0; i < 128; i++)
 	{
-		glDeleteTextures(1, &character[i].texture);		
+		glDeleteTextures(1, &font->character[i].texture);		
 	}	
 }
 
@@ -1050,7 +1054,7 @@ struct nhgui_result
 nhgui_object_font_text_result_centered_by_previous_x(
 		struct nhgui_result result,
 		struct nhgui_context *context, 
-		struct nhgui_object_font_character character[128],
+		struct nhgui_object_font *font,
 		struct nhgui_render_attribute *attribute,
 		const char *text,
 		uint32_t text_length
@@ -1063,11 +1067,11 @@ nhgui_object_font_text_result_centered_by_previous_x(
 	for(uint32_t i = 0; i < text_length; i++)
 	{
 		unsigned char c = text[i];
-		float ratio = attribute->height_mm/character[c].height_mm;
+		float ratio = attribute->height_mm/font->height_mm;
 		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
 
 		if(i != text_length-1)
-			x_mm += (character[c].advance_x >> 6) * mm_per_pixel_x;
+			x_mm += (font->character[c].advance_x >> 6) * mm_per_pixel_x;
 	}
 	result.x_mm += result.x_inc_next/2 - x_mm/2;
 	return result;
@@ -1077,7 +1081,7 @@ nhgui_object_font_text_result_centered_by_previous_x(
 float 
 nhgui_object_font_text_delta_y_max(
 		struct nhgui_context *context, 
-		struct nhgui_object_font_character character[128],
+		struct nhgui_object_font *font,
 		struct nhgui_render_attribute *attribute,
 		const char *text, 
 		uint32_t text_length
@@ -1087,10 +1091,10 @@ nhgui_object_font_text_delta_y_max(
 	for(uint32_t i = 0; i < text_length; i++)
 	{	
 		unsigned char c = (unsigned char)text[i];
-		float ratio = attribute->height_mm/character[c].height_mm;
+		float ratio = attribute->height_mm/font->height_mm;
 		float mm_per_pixel_y = ratio * (float)context->height_mm/(float)context->res_y;
 
-		float delta  = character[c].height * mm_per_pixel_y;
+		float delta  = font->character[c].height * mm_per_pixel_y;
 		
 		delta_y_max = delta_y_max < delta ? delta : delta_y_max;
 	}
@@ -1101,7 +1105,7 @@ nhgui_object_font_text_delta_y_max(
 struct nhgui_result
 nhgui_object_font_text(
 		struct nhgui_context *context, 
-		struct nhgui_object_font_character character[128], 
+		struct nhgui_object_font *font,
 		const char *text, 
 		uint32_t text_length, 
 		struct nhgui_render_attribute *attribute,
@@ -1117,7 +1121,7 @@ nhgui_object_font_text(
 
 	float delta_y_max = nhgui_object_font_text_delta_y_max(
 			context,
-			character,
+			font,
 			attribute, 
 			text,
 			text_length
@@ -1134,17 +1138,17 @@ nhgui_object_font_text(
 	{	
 		unsigned char c = (unsigned char)text[i];
 
-		float ratio = attribute->height_mm/character[c].height_mm;
+		float ratio = attribute->height_mm/font->height_mm;
 
 		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
 		float mm_per_pixel_y = ratio * (float)context->height_mm/(float)context->res_y;
 		
-		float width_mm = (float)character[c].width * mm_per_pixel_x;
-		float height_mm = (float)character[c].height * mm_per_pixel_y;
+		float width_mm = (float)font->character[c].width * mm_per_pixel_x;
+		float height_mm = (float)font->character[c].height * mm_per_pixel_y;
 		
 		struct nhgui_result result_tmp;	
-		result_tmp.x_mm = result.x_mm + character[c].bearing_x * mm_per_pixel_x;
-		result_tmp.y_mm = result.y_mm - (character[c].height - character[c].bearing_y) * mm_per_pixel_y - delta_y_max; 
+		result_tmp.x_mm = result.x_mm + font->character[c].bearing_x * mm_per_pixel_x;
+		result_tmp.y_mm = result.y_mm - (font->character[c].height - font->character[c].bearing_y) * mm_per_pixel_y - delta_y_max; 
 
 		nhgui_common_uniform_locations_set(
 				&instance->locations,
@@ -1153,10 +1157,10 @@ nhgui_object_font_text(
 				attribute->r, attribute->g, attribute->b
 		);
 
-		result.x_mm += (character[c].advance_x >> 6) * mm_per_pixel_x;
+		result.x_mm += (font->character[c].advance_x >> 6) * mm_per_pixel_x;
 		
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, character[c].texture);
+		glBindTexture(GL_TEXTURE_2D, font->character[c].texture);
 
 		nhgui_surface_render(&context->surface);
 	}

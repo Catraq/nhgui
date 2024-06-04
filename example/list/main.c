@@ -34,7 +34,7 @@ nhgui_object_text_list(
 		char *entry[],
 		uint32_t *entry_length,
 		uint32_t entry_count,
-		struct nhgui_object_font_character character[128], 
+		struct nhgui_object_font *font,
 		struct nhgui_render_attribute *attribute,
 		struct nhgui_input *input, 
 		struct nhgui_result result
@@ -110,7 +110,7 @@ nhgui_object_text_list(
 
 			nhgui_object_font_text(
 					context, 
-					character, 
+					font, 
 					entry[i],
 					entry_length[i],
 					&selected_font_attribute,
@@ -145,7 +145,7 @@ nhgui_object_text_list(
 
 			nhgui_object_font_text(
 					context, 
-					character, 
+					font, 
 					entry[i],
 					entry_length[i],
 					&font_attribute,
@@ -251,8 +251,7 @@ int main(int args, char *argv[])
 
 
 	const char *font_filename = "../data/UbuntuMono-R.ttf";
-	struct nhgui_object_font_character character[128];
-	struct nhgui_object_font_character radio_character[128];
+	struct nhgui_object_font font;
 
 	{
 		struct nhgui_object_font_freetype font_freetype;
@@ -266,7 +265,7 @@ int main(int args, char *argv[])
 				&font_freetype,
 				&context,
 				&font_render_attribute ,
-				character, 
+				&font, 
 				font_filename
 		);
 
@@ -276,20 +275,6 @@ int main(int args, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 	
-		result = nhgui_object_font_freetype_characters_initialize(
-				&font_freetype,
-				&context,
-				&radio_render_attribute,
-				radio_character, 
-				font_filename
-		);
-
-		if(result < 0)
-		{
-			fprintf(stderr, "nhgui_object_font_freetype_characters_initialize() failed. \n");
-			exit(EXIT_FAILURE);
-		}
-
 
 		nhgui_object_font_freetype_deinitialize(&font_freetype);
 	}
@@ -318,6 +303,7 @@ int main(int args, char *argv[])
 
 	struct nhgui_object_input_field add_field = {
 		.width_mm = 70,
+		.field_color = {.x = 0.3, .y = 0.3, .z = 0.3},
 	};
 
 	struct nhgui_object_text_list list_object  = 
@@ -355,7 +341,7 @@ int main(int args, char *argv[])
 		struct nhgui_result res = nhgui_object_input_field(
 				&context,
 				&add_field, 
-				character, 
+				&font,
 				&radio_render_attribute,
 				&input, 
 				input_res,
@@ -384,7 +370,7 @@ int main(int args, char *argv[])
 		struct nhgui_result icon_blank_center = nhgui_object_font_text_result_centered_by_previous_x(
 				res, 
 				&context,
-				character,
+				&font,
 				&radio_render_attribute,
 				add_text,
 				sizeof(add_text)
@@ -393,7 +379,7 @@ int main(int args, char *argv[])
 
 		nhgui_object_font_text(
 				&context,
-				character,
+				&font,
 				add_text,
 				sizeof(add_text),
 				&radio_render_attribute,
@@ -443,7 +429,7 @@ int main(int args, char *argv[])
 				add_text_buffer_ptr,
 				add_text_buffer_length,
 				add_text_count, 
-				character, 
+				&font, 
 				&radio_render_attribute,
 				&input, 
 				res
@@ -468,7 +454,7 @@ int main(int args, char *argv[])
 				struct nhgui_result icon_blank_delete_center = nhgui_object_font_text_result_centered_by_previous_x(
 						res, 
 						&context,
-						character,
+						&font,
 						&radio_render_attribute,
 						delete_text,
 						sizeof(delete_text)
@@ -477,7 +463,7 @@ int main(int args, char *argv[])
 
 				nhgui_object_font_text(
 						&context,
-						character,
+						&font,
 						delete_text,
 						sizeof(delete_text),
 						&radio_render_attribute,
