@@ -781,6 +781,212 @@ nhgui_icon_text_cursor_deinitialize(struct nhgui_icon_text_cursor_instance *inst
 	glDeleteProgram(instance->program);
 }
 
+uint32_t 
+nhgui_object_font_text_overflow_count(
+		struct nhgui_result within, 
+		struct nhgui_context *context,
+		struct nhgui_object_font *font,
+		struct nhgui_render_attribute *attribute,
+		char *text,
+		uint32_t text_length
+)
+{
+
+
+	/* Find number of characters that is past result, 
+	 * that is all characters that is outside of the 
+	 * blank that is used as background. 
+	 */
+	float x_mm = 0.0f;
+	float x_mm_max = within.x_mm + within.x_inc_next;
+	uint32_t overflow_count = 0;
+	for(uint32_t i = 0; i < text_length; i++)
+	{
+		unsigned char c = text[i];
+		float ratio = attribute->height_mm/font->height_mm;
+		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
+		
+		float new_x_mm = x_mm + (float)(font->character[c].advance_x >> 6) * mm_per_pixel_x;
+		/* See if it is past the boudning box */
+		if(within.x_mm + new_x_mm > x_mm_max)
+		{
+			overflow_count = text_length - i;		
+			break;
+		}
+		x_mm += (font->character[c].advance_x >> 6) * mm_per_pixel_x;
+	}
+
+	return overflow_count;
+}
+	
+
+struct nhgui_result
+nhgui_object_text_list(
+		struct nhgui_context *context,
+		struct nhgui_object_text_list *list,
+		char *entry[],
+		uint32_t *entry_length,
+		uint32_t entry_count,
+		struct nhgui_object_font *font,
+		struct nhgui_render_attribute *attribute,
+		struct nhgui_input *input, 
+		struct nhgui_result result
+
+)
+{
+
+	float cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
+	float cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
+
+	if(list->selected_prev > 0)
+	{
+		list->selected_prev = 0;
+	}
+	else if(input->selected_new > 0)
+	{
+		list->selected = 0;	
+	}	
+	
+	for(uint32_t i = 0; i < entry_count; i++)
+	{
+		
+
+		struct nhgui_result result_tmp = result;
+		result_tmp.y_mm -= attribute->height_mm;
+		
+		if(input->cursor_button_left > 0)
+		{	
+			if(cursor_x_mm > result_tmp.x_mm && cursor_x_mm < result_tmp.x_mm + list->width_mm 
+			&& cursor_y_mm > result_tmp.y_mm && cursor_y_mm < result_tmp.y_mm + attribute->height_mm)
+			{
+				if(list->selected_index == i)
+					list->selected = list->selected ? 0 : 1;
+				else
+					list->selected = 1;
+
+				list->selected_prev = list->selected;
+
+				list->selected_index = i;
+
+				if(list->selected > 0)
+				{
+					input->selected_new = 1;	
+				}	
+			}	
+		}
+
+		if(list->selected > 0 && list->selected_index == i)
+		{
+		
+			struct nhgui_render_attribute selected_attribute = {
+				.height_mm = attribute->height_mm,
+				.width_mm = list->width_mm,
+				.r = list->selected_field_color.x,
+				.g = list->selected_field_color.y,
+				.b = list->selected_field_color.z,
+			};
+
+			result = nhgui_icon_blank_no_object(
+					context,
+					&selected_attribute,
+					input,
+					result
+			);
+			
+			list->selected_result = result;
+
+			uint32_t overflow_count_index = 0;
+			uint32_t overflow_count = nhgui_object_font_text_overflow_count(
+				result,	
+				context,
+				font,
+				attribute,
+				entry[i],
+				entry_length[i]
+			);
+			
+			
+			if(overflow_count > 0 && list->char_scroll_per_sec > 0)
+			{
+				uint32_t s = input->time/list->char_scroll_per_sec;
+				overflow_count_index = s%overflow_count;
+			}
+
+			struct nhgui_render_attribute selected_font_attribute = *attribute;
+			selected_font_attribute.r = list->selected_text_color.x;
+			selected_font_attribute.g = list->selected_text_color.y;
+			selected_font_attribute.b = list->selected_text_color.z;
+
+			nhgui_object_font_text(
+					context, 
+					font, 
+					&entry[i][overflow_count_index],
+					entry_length[i] - overflow_count_index,
+					&selected_font_attribute,
+					input, 
+					result
+			);
+		}
+		else
+		{
+
+			struct nhgui_render_attribute _attribute = {
+				.height_mm = attribute->height_mm,	
+				.width_mm = list->width_mm,
+				.r = list->field_color.x,
+				.g = list->field_color.y,
+				.b = list->field_color.z,
+			};
+
+
+			result = nhgui_icon_blank_no_object(
+					context,
+					&_attribute,
+					input,
+					result
+			);
+			uint32_t overflow_count_index = 0;
+			uint32_t overflow_count = nhgui_object_font_text_overflow_count(
+				result,	
+				context,
+				font,
+				attribute,
+				entry[i],
+				entry_length[i]
+			);
+
+			if(overflow_count > 0 && list->char_scroll_per_sec > 0)
+			{
+				uint32_t s = input->time/list->char_scroll_per_sec;
+				overflow_count_index = (overflow_count + s)%overflow_count;
+			}
+
+			struct nhgui_render_attribute font_attribute = *attribute;
+			font_attribute.r = list->text_color.x;
+			font_attribute.g = list->text_color.y;
+			font_attribute.b = list->text_color.z;
+			
+			nhgui_object_font_text(
+					context, 
+					font, 
+					&entry[i][overflow_count_index],
+					entry_length[i] - overflow_count,
+					&font_attribute,
+					input, 
+					result
+			);
+
+		}
+
+		if(i != entry_count - 1)
+			result = nhgui_result_dec_y(result);
+
+	}
+
+	return result;
+}
+
+
 
 struct nhgui_result 
 nhgui_object_input_field(
@@ -893,6 +1099,7 @@ nhgui_object_input_field(
 	 * that is all characters that is outside of the 
 	 * blank that is used as background. 
 	 */
+	
 	float x_mm = 0.0f;
 	float x_mm_max = background_result.x_mm + background_result.x_inc_next;
 	uint32_t overflow_count = 0;
@@ -912,6 +1119,7 @@ nhgui_object_input_field(
 		}
 		x_mm += (font->character[c].advance_x >> 6) * mm_per_pixel_x;
 	}
+
 	
 	/* If the blank was clicked then compute the index of the selcted character, 
 	 * if no index is found. Then it is safe to assume that area clicked was 
@@ -1097,6 +1305,15 @@ nhgui_object_font_freetype_characters_initialize(
 	
 	FT_Done_Face(face);
 
+	const char text[] = "abcdefghlm";
+	font->delta_y_max = nhgui_object_font_text_delta_y_max(
+			context,
+			font,
+			attribute,
+			text,
+			sizeof(text)
+	);
+
 	return 0;	
 }
 
@@ -1244,14 +1461,9 @@ nhgui_object_font_text(
 
 	struct nhgui_object_font_text_instance *instance = &context->font;
 
-	float delta_y_max = nhgui_object_font_text_delta_y_max(
-			context,
-			font,
-			attribute, 
-			text,
-			text_length
-	);
+	float ratio = attribute->height_mm/font->height_mm;
 
+	float delta_y_max = ratio * font->delta_y_max;
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1263,7 +1475,6 @@ nhgui_object_font_text(
 	{	
 		unsigned char c = (unsigned char)text[i];
 
-		float ratio = attribute->height_mm/font->height_mm;
 
 		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
 		float mm_per_pixel_y = ratio * (float)context->height_mm/(float)context->res_y;

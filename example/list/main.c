@@ -9,161 +9,6 @@
 
 
 
-struct nhgui_object_text_list
-{
-	uint32_t width_mm;
-
-	struct vec3 text_color;
-	struct vec3 field_color;
-
-	struct vec3 selected_field_color;
-	struct vec3 selected_text_color;
-
-	uint32_t selected;
-	uint32_t selected_index;
-
-	struct nhgui_result selected_result;
-
-	uint32_t selected_prev;
-};
-
-struct nhgui_result
-nhgui_object_text_list(
-		struct nhgui_context *context,
-		struct nhgui_object_text_list *list,
-		char *entry[],
-		uint32_t *entry_length,
-		uint32_t entry_count,
-		struct nhgui_object_font *font,
-		struct nhgui_render_attribute *attribute,
-		struct nhgui_input *input, 
-		struct nhgui_result result
-
-)
-{
-
-	float cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
-	float cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
-
-	if(list->selected_prev > 0)
-	{
-		list->selected_prev = 0;
-		input->selected_new = 0;	
-	}
-	else if(input->selected_new > 0)
-	{
-		list->selected = 0;	
-	}	
-	
-	for(uint32_t i = 0; i < entry_count; i++)
-	{
-		
-
-		struct nhgui_result result_tmp = result;
-		result_tmp.y_mm -= attribute->height_mm;
-		
-		if(input->cursor_button_left > 0)
-		{	
-			if(cursor_x_mm > result_tmp.x_mm && cursor_x_mm < result_tmp.x_mm + list->width_mm 
-			&& cursor_y_mm > result_tmp.y_mm && cursor_y_mm < result_tmp.y_mm + attribute->height_mm)
-			{
-				if(list->selected_index == i)
-					list->selected = list->selected ? 0 : 1;
-				else
-					list->selected = 1;
-
-				list->selected_prev = list->selected;
-
-				list->selected_index = i;
-
-				if(list->selected > 0)
-				{
-					input->selected_new = 1;	
-				}	
-			}	
-		}
-
-		if(list->selected > 0 && list->selected_index == i)
-		{
-		
-			struct nhgui_render_attribute selected_attribute = {
-				.height_mm = attribute->height_mm,
-				.width_mm = list->width_mm,
-				.r = list->selected_field_color.x,
-				.g = list->selected_field_color.y,
-				.b = list->selected_field_color.z,
-			};
-
-			result = nhgui_icon_blank_no_object(
-					context,
-					&selected_attribute,
-					input,
-					result
-			);
-
-			list->selected_result = result;
-			
-			struct nhgui_render_attribute selected_font_attribute = *attribute;
-			selected_font_attribute.r = list->selected_text_color.x;
-			selected_font_attribute.g = list->selected_text_color.y;
-			selected_font_attribute.b = list->selected_text_color.z;
-
-			nhgui_object_font_text(
-					context, 
-					font, 
-					entry[i],
-					entry_length[i],
-					&selected_font_attribute,
-					input, 
-					result
-			);
-		}
-		else
-		{
-
-			struct nhgui_render_attribute _attribute = {
-				.height_mm = attribute->height_mm,	
-				.width_mm = list->width_mm,
-				.r = list->field_color.x,
-				.g = list->field_color.y,
-				.b = list->field_color.z,
-			};
-
-
-			result = nhgui_icon_blank_no_object(
-					context,
-					&_attribute,
-					input,
-					result
-			);
-
-	
-			struct nhgui_render_attribute font_attribute = *attribute;
-			font_attribute.r = list->text_color.x;
-			font_attribute.g = list->text_color.y;
-			font_attribute.b = list->text_color.z;
-
-			nhgui_object_font_text(
-					context, 
-					font, 
-					entry[i],
-					entry_length[i],
-					&font_attribute,
-					input, 
-					result
-			);
-		}
-
-		if(i != entry_count - 1)
-			result = nhgui_result_dec_y(result);
-
-	}
-
-	return result;
-}
-
-
-
 
 
 int main(int args, char *argv[])
@@ -286,7 +131,7 @@ int main(int args, char *argv[])
 
 
 	/* Add input field */
-	const uint32_t add_buffer_size = 30;
+	const uint32_t add_buffer_size = 50;
 	uint32_t add_buffer_length = 0;
 	char add_buffer[add_buffer_size];
 	
@@ -308,7 +153,8 @@ int main(int args, char *argv[])
 
 	struct nhgui_object_text_list list_object  = 
 	{
-		.width_mm = 70,
+		.width_mm = 50,
+		.char_scroll_per_sec = 1,
 		.text_color = {.x = 1.0, .y = 1.0, .z = 1.0},	
 		.field_color = {.x = 0.0, .y = 0.0, .z = 0.0},	
 		.selected_text_color = {.x = 0.0, .y = 0.0, .z = 0.0},	

@@ -152,6 +152,7 @@ struct nhgui_object_font_character
 struct nhgui_object_font
 {
 	float height_mm;
+	float delta_y_max;
 	struct nhgui_object_font_character character[128];
 };
 
@@ -199,6 +200,37 @@ struct nhgui_object_input_field
 	
 	/* Used for input */	
 	struct nhgui_icon_blank_object blank_object;	
+};
+
+
+struct nhgui_object_text_list
+{
+	/* Width of the list */
+	uint32_t width_mm;
+	
+	/* Color of text and background of none selected */
+	struct vec3 text_color;
+	struct vec3 field_color;
+
+	/* Color of text and background of selected */
+	struct vec3 selected_field_color;
+	struct vec3 selected_text_color;
+	
+	/* > 0, then scroll the text if it overflows */
+	float char_scroll_per_sec;
+	
+	/* > 0 if anything is selected */
+	uint32_t selected;
+
+	/* Index of the selcted */
+	uint32_t selected_index;
+	
+	/* Used internaly */	
+	uint32_t selected_prev;
+
+	/* Result of the selected background */
+	struct nhgui_result selected_result;
+
 };
 
 
@@ -291,6 +323,20 @@ void nhgui_surface_render_instanced(
 	       	uint32_t instance_count
 );
 
+struct nhgui_result
+nhgui_object_text_list(
+		struct nhgui_context *context,
+		struct nhgui_object_text_list *list,
+		char *entry[],
+		uint32_t *entry_length,
+		uint32_t entry_count,
+		struct nhgui_object_font *font,
+		struct nhgui_render_attribute *attribute,
+		struct nhgui_input *input, 
+		struct nhgui_result result
+
+);
+
 struct nhgui_result 
 nhgui_object_input_field(
 		struct nhgui_context *context,
@@ -302,8 +348,8 @@ nhgui_object_input_field(
 		char *input_buffer, 
 		uint32_t *input_buffer_length,
 		uint32_t input_buffer_size
-)
-	;
+);
+
 struct nhgui_result 
 nhgui_icon_blank_no_object(
 		struct nhgui_context *context, 
@@ -402,6 +448,15 @@ nhgui_object_font_text_result_centered_by_previous_x(
 );
 
 
+uint32_t 
+nhgui_object_font_text_overflow_count(
+		struct nhgui_result within, 
+		struct nhgui_context *context,
+		struct nhgui_object_font *font,
+		struct nhgui_render_attribute *attribute,
+		char *text,
+		uint32_t text_length
+);
 
 float 
 nhgui_object_font_text_delta_y_max(
