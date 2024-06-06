@@ -286,7 +286,7 @@ int main(int args, char *argv[])
 
 
 	/* Add input field */
-	const uint32_t add_buffer_size = 32;
+	const uint32_t add_buffer_size = 30;
 	uint32_t add_buffer_length = 0;
 	char add_buffer[add_buffer_size];
 	
@@ -302,7 +302,7 @@ int main(int args, char *argv[])
 
 
 	struct nhgui_object_input_field add_field = {
-		.width_mm = 70,
+		.width_mm = 30,
 		.field_color = {.x = 0.3, .y = 0.3, .z = 0.3},
 	};
 
@@ -391,7 +391,6 @@ int main(int args, char *argv[])
 
 		if(add_blank.clicked > 0)
 		{
-			add_blank.clicked = 0;
 			if(add_text_used < add_text_count)
 			{
 				add_text_used++;
@@ -473,7 +472,6 @@ int main(int args, char *argv[])
 
 				if(delete_blank.clicked > 0)
 				{
-					delete_blank.clicked = 0;
 
 					uint32_t index = list_object.selected_index;
 					add_text_buffer_ptr[index] = NULL;

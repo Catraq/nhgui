@@ -188,6 +188,9 @@ struct nhgui_icon_blank_object
 
 struct nhgui_object_input_field
 {
+	/* Cursor position */
+	uint32_t cursor_index;
+
 	/* Width of the input field */
 	float width_mm;
 
