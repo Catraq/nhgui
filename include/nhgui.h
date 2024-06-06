@@ -258,19 +258,16 @@ struct nhgui_context
 };
 
 
-GLuint nhgui_shader_vertex_create_from_file(
-		const char *vertex_source_filename, 
-	       	const char *fragment_source_filename
+int nhgui_context_initialize(
+		struct nhgui_context *context,
+	       	uint32_t res_x, uint32_t res_y,
+	       	uint32_t width_mm, uint32_t height_mm
 );
 
-GLuint nhgui_shader_vertex_create(
-		const char **vertex_source, 
-		int32_t *vertex_source_length, 
-		uint32_t vertex_source_count, 
-		const char **fragment_source,
-	       	int32_t *fragment_source_length,
-	       	uint32_t fragment_source_count
+void nhgui_context_deinitialize(
+		struct nhgui_context *context
 );
+
 
 
 
@@ -292,36 +289,6 @@ nhgui_result_rewind_x_to(struct nhgui_result result, struct nhgui_result to);
 
 struct nhgui_result
 nhgui_result_rewind_y(struct nhgui_result result);
-
-int nhgui_common_uniform_locations_find(
-		struct nhgui_common_uniform_locations *locations, 
-		GLuint program
-);
-
-void nhgui_common_uniform_locations_set(
-		struct nhgui_common_uniform_locations *locations,
-	       	struct nhgui_context *context,
-	       	struct nhgui_input *input,
-	       	struct nhgui_result result,
-	       	float width_mm, float height_mm,
-		float r, float g, float  b
-);
-int nhgui_surface_initialize(
-		struct nhgui_surface *surface
-);
-
-void nhgui_surface_deinitialize(
-		struct nhgui_surface *surface
-);
-
-void nhgui_surface_render(
-		struct nhgui_surface *nhgui_surface
-);
-
-void nhgui_surface_render_instanced(
-		struct nhgui_surface *nhgui_surface,
-	       	uint32_t instance_count
-);
 
 struct nhgui_result
 nhgui_object_text_list(
@@ -367,13 +334,6 @@ nhgui_icon_blank(
 		struct nhgui_result result
 );
 
-int 
-nhgui_icon_blank_initialize(struct nhgui_icon_blank_instance *instance);
-
-void
-nhgui_icon_blank_deinitialize(struct nhgui_icon_blank_instance *instance);
-
-
 struct nhgui_result 
 nhgui_icon_text_cursor(
 		struct nhgui_context *context, 
@@ -381,13 +341,6 @@ nhgui_icon_text_cursor(
 		struct nhgui_input *input, 
 		struct nhgui_result result
 );
-
-int 
-nhgui_icon_text_cursor_initialize(struct nhgui_icon_text_cursor_instance *instance);
-
-void
-nhgui_icon_text_cursor_deinitialize(struct nhgui_icon_text_cursor_instance *instance);
-
 
 
 struct nhgui_result
@@ -397,17 +350,6 @@ nhgui_icon_menu(
 		struct nhgui_render_attribute *attribute,
 		struct nhgui_input *input, 
 		struct nhgui_result result
-);
-
-
-int 
-nhgui_icon_menu_initialize(
-		struct nhgui_icon_menu_instance *instance
-);
-
-void
-nhgui_icon_menu_deinitialize(
-		struct nhgui_icon_menu_instance *instance
 );
 
 
@@ -430,13 +372,6 @@ void
 nhgui_object_font_freetype_characters_deinitialize(
 	       	struct nhgui_object_font *font
 );
-
-int 
-nhgui_object_font_text_initialize(struct nhgui_object_font_text_instance *instance);
-
-void
-nhgui_object_font_text_deinitialize(struct nhgui_object_font_text_instance *instance);
-
 struct nhgui_result
 nhgui_object_font_text_result_centered_by_previous_x(
 		struct nhgui_result result,
@@ -488,6 +423,60 @@ nhgui_object_radio_button(
 	       	struct nhgui_result result
 );
 
+/* Internal functions */
+
+int nhgui_common_uniform_locations_find(
+		struct nhgui_common_uniform_locations *locations, 
+		GLuint program
+);
+
+void nhgui_common_uniform_locations_set(
+		struct nhgui_common_uniform_locations *locations,
+	       	struct nhgui_context *context,
+	       	struct nhgui_input *input,
+	       	struct nhgui_result result,
+	       	float width_mm, float height_mm,
+		float r, float g, float  b
+);
+int nhgui_surface_initialize(
+		struct nhgui_surface *surface
+);
+
+void nhgui_surface_deinitialize(
+		struct nhgui_surface *surface
+);
+
+void nhgui_surface_render(
+		struct nhgui_surface *nhgui_surface
+);
+
+void nhgui_surface_render_instanced(
+		struct nhgui_surface *nhgui_surface,
+	       	uint32_t instance_count
+);
+
+
+int 
+nhgui_icon_blank_initialize(struct nhgui_icon_blank_instance *instance);
+
+void
+nhgui_icon_blank_deinitialize(struct nhgui_icon_blank_instance *instance);
+
+
+int 
+nhgui_icon_text_cursor_initialize(struct nhgui_icon_text_cursor_instance *instance);
+
+void
+nhgui_icon_text_cursor_deinitialize(struct nhgui_icon_text_cursor_instance *instance);
+
+
+int 
+nhgui_object_font_text_initialize(struct nhgui_object_font_text_instance *instance);
+
+void
+nhgui_object_font_text_deinitialize(struct nhgui_object_font_text_instance *instance);
+
+
 int nhgui_object_radio_button_initialize(
 		struct nhgui_object_radio_button_instance *instance
 );
@@ -498,18 +487,32 @@ void nhgui_object_radio_button_deinitialize(
 );
 
 
-
-
-int nhgui_context_initialize(
-		struct nhgui_context *context,
-	       	uint32_t res_x, uint32_t res_y,
-	       	uint32_t width_mm, uint32_t height_mm
+int 
+nhgui_icon_menu_initialize(
+		struct nhgui_icon_menu_instance *instance
 );
 
-void nhgui_context_deinitialize(
-		struct nhgui_context *context
+void
+nhgui_icon_menu_deinitialize(
+		struct nhgui_icon_menu_instance *instance
 );
 
+
+
+
+GLuint nhgui_shader_vertex_create_from_file(
+		const char *vertex_source_filename, 
+	       	const char *fragment_source_filename
+);
+
+GLuint nhgui_shader_vertex_create(
+		const char **vertex_source, 
+		int32_t *vertex_source_length, 
+		uint32_t vertex_source_count, 
+		const char **fragment_source,
+	       	int32_t *fragment_source_length,
+	       	uint32_t fragment_source_count
+);
 
 
 
