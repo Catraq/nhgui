@@ -191,9 +191,6 @@ struct nhgui_object_input_field
 	/* Cursor position */
 	uint32_t cursor_index;
 
-	/* Width of the input field */
-	float width_mm;
-
 	/* background color of the field */
 	struct vec3 field_color;
 	
@@ -204,8 +201,6 @@ struct nhgui_object_input_field
 
 struct nhgui_object_text_list
 {
-	/* Width of the list */
-	uint32_t width_mm;
 	
 	/* Color of text and background of none selected */
 	struct vec3 text_color;

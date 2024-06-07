@@ -856,7 +856,7 @@ nhgui_object_text_list(
 		
 		if(input->cursor_button_left > 0)
 		{	
-			if(cursor_x_mm > result_tmp.x_mm && cursor_x_mm < result_tmp.x_mm + list->width_mm 
+			if(cursor_x_mm > result_tmp.x_mm && cursor_x_mm < result_tmp.x_mm + attribute->width_mm 
 			&& cursor_y_mm > result_tmp.y_mm && cursor_y_mm < result_tmp.y_mm + attribute->height_mm)
 			{
 				if(list->selected_index == i)
@@ -880,7 +880,7 @@ nhgui_object_text_list(
 		
 			struct nhgui_render_attribute selected_attribute = {
 				.height_mm = attribute->height_mm,
-				.width_mm = list->width_mm,
+				.width_mm = attribute->width_mm,
 				.r = list->selected_field_color.x,
 				.g = list->selected_field_color.y,
 				.b = list->selected_field_color.z,
@@ -932,7 +932,7 @@ nhgui_object_text_list(
 
 			struct nhgui_render_attribute _attribute = {
 				.height_mm = attribute->height_mm,	
-				.width_mm = list->width_mm,
+				.width_mm = attribute->width_mm,
 				.r = list->field_color.x,
 				.g = list->field_color.y,
 				.b = list->field_color.z,
@@ -1007,7 +1007,7 @@ nhgui_object_input_field(
 
 	struct nhgui_render_attribute blank_attribute = 
 	{
-		.width_mm = field->width_mm,
+		.width_mm = attribute->width_mm,
 		.height_mm = attribute->height_mm,	
 		.r = field->field_color.x,
 		.g = field->field_color.y,
