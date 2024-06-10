@@ -10,13 +10,15 @@
 struct nhgui_object_scroll_bar 
 {
 
+	/* Amount of scroll in mm */
 	float scroll_y_mm;
 	float scroll_x_mm;	
 
-
+	/* Used for the scroll bars */
 	struct nhgui_icon_blank_object blank_scroll_y;
 	struct nhgui_icon_blank_object blank_scroll_x;
 };
+
 
 struct nhgui_result
 nhgui_object_scroll_bar_scroll_result(
@@ -40,14 +42,25 @@ nhgui_object_scroll_bar(
 		struct nhgui_result result	
 )
 {
+
+	/* Compute the overflow in x and y direction and the % of overflow 
+	 * compared to the size attribute corresponds to space that can be 
+	 * scrolled.
+	 *
+	 * The y scroll bar consumed space in x direction so the x bar have 
+	 * to be adjusted to be able to scroll past the space consumed by 
+	 * the y scroll bar. 
+	 * */
 	
 	float x_mm_used = 0.0f;
 	float overflow_y_mm = size_attribute->height_mm - result.y_min_mm;
 	if(overflow_y_mm > 0.0f)
 	{	
+		/* Compute % that is overflowing */
 		float y_mm_size = size_attribute->height_mm;
 		float p = (y_mm_size-overflow_y_mm)/(y_mm_size);
-
+		
+		/* Scale scroll bar with the %. If to small make it height */
 		float scroll_bar_size_mm = y_mm_size * p < scroll_attribute->height_mm ? scroll_attribute->height_mm : y_mm_size * p;
 		struct nhgui_render_attribute blank_scroll_attribute = {
 			.height_mm = scroll_bar_size_mm,
@@ -56,9 +69,11 @@ nhgui_object_scroll_bar(
 			.g = scroll_attribute->g,
 			.b = scroll_attribute->b
 		};
-
+		
+		/* size conusmed by the y scroll bar */
 		x_mm_used = blank_scroll_attribute.width_mm;
 		
+		/* Place the scrollbar in the right of the scroll result */	
 		struct nhgui_result scroll_result_y = scroll_result;
 		scroll_result_y.x_mm = scroll_result.x_mm + size_attribute->width_mm - blank_scroll_attribute.width_mm;
 		scroll_result_y.y_mm -= bar->scroll_y_mm;
@@ -75,6 +90,7 @@ nhgui_object_scroll_bar(
 
 		if(bar->blank_scroll_y.pressed > 0)
 		{
+			/* Allow moving the scroll bar */	
 			float scroll_area_mm = y_mm_size - scroll_bar_size_mm;
 			float mm_per_pixel = (float)context->height_mm/(float)context->res_y;
 			float scroll_in_mm = input->cursor_y_delta * mm_per_pixel;
@@ -87,7 +103,7 @@ nhgui_object_scroll_bar(
 	}
 
 	float x_mm_size = size_attribute->width_mm;
-	float x_overflow_mm = result.x_max_mm + 2*x_mm_used - x_mm_size;
+	float x_overflow_mm = result.x_max_mm + 2*x_mm_used - x_mm_size - scroll_result.x_mm;
 	if(x_overflow_mm > 0.0)
 	{
 		float p = (x_mm_size-x_overflow_mm)/(x_mm_size);
@@ -136,9 +152,12 @@ nhgui_object_scroll_bar(
 
 struct nhgui_window 
 {
-	struct nhgui_result scroll_result_begin;
-	struct nhgui_object_scroll_bar scroll_bar;
+	/* Attributes of the scroll bar. Shall be set. */
+	struct nhgui_render_attribute scroll_bar_attribute;
 
+	/* Internals */
+	struct nhgui_result result_begin;
+	struct nhgui_object_scroll_bar scroll_bar;
 };
 
 
@@ -151,8 +170,11 @@ nhgui_window_begin(
 		struct nhgui_result result
 )
 {
-	window->scroll_result_begin = result;
+	/* Store the result such that the window initial positions are known */
+	window->result_begin = result;
 	
+	/* Compute the screen coordinates of the window and only alllow drawing 
+	 * to the pixels within the area using scissor test in opengl. */	
 	float x_pixels_per_mm = (float)context->res_x/(float)context->width_mm;
 	float y_pixels_per_mm = (float)context->res_y/(float)context->height_mm;
 	
@@ -170,9 +192,7 @@ nhgui_window_begin(
 	);
 
 
-
-
-
+	/* Apply offsets that are adjusted by the scroll bars to the result. */
 	result = nhgui_object_scroll_bar_scroll_result(
 			&window->scroll_bar,
 			result
@@ -191,13 +211,8 @@ nhgui_window_end(
 		struct nhgui_result result
 )
 {
-	struct nhgui_render_attribute scroll_bar_attribute = {
-		.width_mm = 3,
-		.height_mm = 10,
-		.r = 1.0
-	};
-
-	struct nhgui_result window_result = window->scroll_result_begin;
+	
+	struct nhgui_result window_result = window->result_begin;
 
 	window_result.x_inc_next = attribute->width_mm;
 	window_result.y_inc_next = attribute->height_mm;
@@ -211,10 +226,10 @@ nhgui_window_end(
 	nhgui_object_scroll_bar(
 			&window->scroll_bar,
 			context,
-			&scroll_bar_attribute, 
+			&window->scroll_bar_attribute, 
 			attribute,
 			input,
-			window->scroll_result_begin,
+			window->result_begin,
 			result
 	);
 
@@ -379,6 +394,14 @@ input_list_example_initialize(
 		.background_color = {.x = 0, .y = 0.3, .z = 0.3},
 		.font_color = {.x=1.0, .y=1.0, .z=1.0},
 	};
+
+	
+	example->nhwindow.scroll_bar_attribute = (struct nhgui_render_attribute){
+		.width_mm = 3,
+		.height_mm = 10,
+		.r = 1.0
+	};
+
 
 }
 
