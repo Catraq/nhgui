@@ -160,8 +160,8 @@ nhgui_common_uniform_locations_set(struct nhgui_common_uniform_locations *locati
 	float s_y = (float)context->res_y/(float)input->height * 1.0 /(float)context->height_mm * height_mm;
 
 	/* Negative as we grow down. */	
-	float p_y = (float)context->res_y/(float)input->height * 1.0/(float)context->height_mm * result.y_mm;
-	float p_x = (float)context->res_x/(float)input->width * 1.0/(float)context->width_mm * result.x_mm; ;
+	float p_y = (float)context->res_y/(float)input->height * 1.0/(float)context->height_mm * (result.y_mm + result.y_offset_mm);
+	float p_x = (float)context->res_x/(float)input->width * 1.0/(float)context->width_mm * (result.x_mm + result.x_offset_mm);
 	
 	/* Convert to gl cordinates [-1, 1] and move down with size otherwise the element will be above the screen */ 
 	p_y = 2.0*p_y-1.0;
@@ -466,6 +466,9 @@ nhgui_icon_blank_no_object(
 	result.y_inc_next = attribute->height_mm;
 	result.x_inc_next = attribute->width_mm;
 
+	result.y_min_mm = result.y_min_mm < result.y_mm - result.y_inc_next ? result.y_min_mm : result.y_mm - result.y_inc_next;
+	result.x_max_mm = result.x_max_mm < result.x_mm + result.x_inc_next ? result.x_mm + result.x_inc_next : result.x_max_mm;
+
 	return result;
 }
 
@@ -495,6 +498,20 @@ nhgui_icon_blank(
 			blank->clicked = 1;
 		}	
 	
+	}
+
+	if(input->cursor_button_left_press > 0)
+	{
+		if(cursor_x_mm > result_tmp.x_mm && cursor_x_mm < result_tmp.x_mm + attribute->width_mm 
+		&& cursor_y_mm > result_tmp.y_mm && cursor_y_mm < result_tmp.y_mm + attribute->height_mm)
+		{
+			blank->pressed = 1;
+		}	
+	
+	}
+	else
+	{
+		blank->pressed = 0;	
 	}
 
 
@@ -534,6 +551,10 @@ nhgui_icon_blank(
 
 	result.y_inc_next = attribute->height_mm;
 	result.x_inc_next = attribute->width_mm;
+
+	result.y_min_mm = result.y_min_mm < result.y_mm - result.y_inc_next ? result.y_min_mm : result.y_mm - result.y_inc_next;
+	result.x_max_mm = result.x_max_mm < result.x_mm + result.x_inc_next ? result.x_mm + result.x_inc_next : result.x_max_mm;
+
 
 	return result;
 }
@@ -1482,7 +1503,7 @@ nhgui_object_font_text(
 		float width_mm = (float)font->character[c].width * mm_per_pixel_x;
 		float height_mm = (float)font->character[c].height * mm_per_pixel_y;
 		
-		struct nhgui_result result_tmp;	
+		struct nhgui_result result_tmp = result;	
 		result_tmp.x_mm = result.x_mm + font->character[c].bearing_x * mm_per_pixel_x;
 		result_tmp.y_mm = result.y_mm - (font->character[c].height - font->character[c].bearing_y) * mm_per_pixel_y - delta_y_max; 
 

@@ -15,6 +15,9 @@
 
 struct nhgui_glfw_frame 
 {
+	float prev_cursor_x;
+	float prev_cursor_y;
+
 	uint32_t backspace_key_last;
 	uint32_t mouse_button_last;
 	uint32_t input_selected_new;
@@ -26,7 +29,7 @@ struct nhgui_glfw_frame
 
 /* Used for creating frame in before it is used in the main loop */
 struct nhgui_glfw_frame
-nhgui_frame_create();
+nhgui_frame_create(GLFWwindow *window);
 
 /* Placed in the end of the rendering loop. */
 void 

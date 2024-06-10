@@ -29,9 +29,9 @@ character_callback_erase_buffer()
 }
 
 struct nhgui_glfw_frame
-nhgui_frame_create()
+nhgui_frame_create(GLFWwindow *window)
 {
-	struct nhgui_glfw_frame frame;
+	struct nhgui_glfw_frame frame = {};
 
 	frame.backspace_key_last = GLFW_RELEASE;
 	frame.mouse_button_last = GLFW_RELEASE;	
@@ -42,6 +42,11 @@ nhgui_frame_create()
 	
 	frame.input_selected_new = 0;	
 	
+	double x_cursor, y_cursor;
+	glfwGetCursorPos(window, &x_cursor, &y_cursor);
+	frame.prev_cursor_x = x_cursor;
+	frame.prev_cursor_y = y_cursor;
+
 	return frame;	
 }
 
@@ -81,6 +86,9 @@ nhgui_glfw_frame_begin(struct nhgui_glfw_frame *frame, GLFWwindow *window)
 
 	int mouse_button = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
 	uint32_t mouse_button_state = mouse_button == GLFW_RELEASE ?  frame->mouse_button_last != mouse_button ? 1 : 0 : 0;
+
+	uint32_t mouse_button_left_pressed = (frame->mouse_button_last == mouse_button && mouse_button == GLFW_PRESS);
+
 	frame->mouse_button_last = mouse_button;
 	
 	struct nhgui_input input = {
@@ -88,7 +96,10 @@ nhgui_glfw_frame_begin(struct nhgui_glfw_frame *frame, GLFWwindow *window)
 		.height = height,
 		.cursor_x = (uint32_t)x_cursor,
 		.cursor_y = height - (uint32_t)y_cursor,
+		.cursor_x_delta = x_cursor - frame->prev_cursor_x,
+		.cursor_y_delta = height - y_cursor - frame->prev_cursor_y,
 		.cursor_button_left = mouse_button_state,
+		.cursor_button_left_press = mouse_button_left_pressed, 
 		.key_backspace_state = backspace_key_state,
 		.deltatime = deltatime,
 		.time = frame->total_time,
@@ -98,6 +109,9 @@ nhgui_glfw_frame_begin(struct nhgui_glfw_frame *frame, GLFWwindow *window)
 	};
 
 	frame->input_selected_new = 0;
+	frame->prev_cursor_y = height - 
+y_cursor;
+	frame->prev_cursor_x = x_cursor;
 
 	memcpy(input.input, character_callback_buffer, character_callback_buffer_index); 
 	input.input_length = character_callback_buffer_index;

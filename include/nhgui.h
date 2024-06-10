@@ -33,6 +33,10 @@ struct nhgui_render_attribute
 
 struct nhgui_result
 {
+	/* Offset the x_mm and y_mm with these values */
+	float x_offset_mm;
+	float y_offset_mm;
+
 	/* Current y and x values to draw to */
 	float y_mm;
 	float x_mm;
@@ -40,6 +44,10 @@ struct nhgui_result
 	/* Next y and x values depending on operation */
 	float  y_inc_next;
 	float  x_inc_next;
+	
+	/* Maximum and min of of +x/y + inc */
+	float y_min_mm;
+	float x_max_mm;
 	
 };
 
@@ -51,11 +59,17 @@ struct nhgui_input
 	uint32_t height;
 
 	/* Cursor location with 0,0 in lower left */
-	uint32_t cursor_x;
-	uint32_t cursor_y;
+	float cursor_x;
+	float cursor_y;
+
+	float cursor_x_delta;
+	float cursor_y_delta;
+
+	/* > 0 if the left cursor button have been clicked */
+	uint32_t cursor_button_left;
 
 	/* > 0 if the left cursor button have been pressed */
-	uint32_t cursor_button_left;
+	uint32_t cursor_button_left_press;
 
 	/* > 0 if the backspace key have been pressed */
 	uint32_t key_backspace_state;
@@ -184,6 +198,8 @@ struct nhgui_icon_blank_object
 	uint8_t selected_prev;
 
 	uint8_t clicked;	
+
+	uint8_t pressed;
 };
 
 struct nhgui_object_input_field
