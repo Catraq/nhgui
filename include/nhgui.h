@@ -117,7 +117,7 @@ struct nhgui_icon_menu_instance
 	struct nhgui_common_uniform_locations locations;
 };
 
-struct nhgui_icon_menu_object
+struct nhgui_icon_menu
 {
 	uint8_t clicked;
 };
@@ -187,12 +187,12 @@ struct nhgui_object_radio_button_instance
 	GLint location_size;
 };
 
-struct nhgui_object_radio_button_object
+struct nhgui_object_radio_button
 {
 	uint8_t checked;
 };
 
-struct nhgui_icon_blank_object
+struct nhgui_icon_blank
 {
 	uint8_t selected;
 	uint8_t selected_prev;
@@ -211,7 +211,7 @@ struct nhgui_object_input_field
 	struct vec3 field_color;
 	
 	/* Used for input */	
-	struct nhgui_icon_blank_object blank_object;	
+	struct nhgui_icon_blank blank_object;	
 };
 
 
@@ -267,6 +267,41 @@ struct nhgui_context
 	uint32_t res_y;
 };
 
+struct nhgui_object_scroll_bar 
+{
+
+
+	/* Internals */
+
+	/* Amount of scroll in mm */
+	float scroll_y_mm;
+	float scroll_x_mm;	
+
+	/* Used for the scroll bars */
+	struct nhgui_icon_blank blank_scroll_y;
+	struct nhgui_icon_blank blank_scroll_x;
+};
+
+struct nhgui_window 
+{
+	/* Attributes of the scroll bar. Shall be set. */
+	struct nhgui_render_attribute scroll_bar_attribute;
+
+	/* Internals */
+	struct nhgui_result result_begin;
+	struct nhgui_object_scroll_bar scroll_bar;
+};
+
+struct nhgui_object_font_text_area 
+{
+	struct vec3 background_color;	
+
+	struct vec3 font_color;
+};
+
+
+
+
 
 int nhgui_context_initialize(
 		struct nhgui_context *context,
@@ -301,65 +336,100 @@ struct nhgui_result
 nhgui_result_rewind_y(struct nhgui_result result);
 
 struct nhgui_result
-nhgui_object_text_list(
-		struct nhgui_context *context,
-		struct nhgui_object_text_list *list,
-		char *entry[],
-		uint32_t *entry_length,
-		uint32_t entry_count,
-		struct nhgui_object_font *font,
-		struct nhgui_render_attribute *attribute,
+nhgui_object_scroll_bar_scroll_result(
+		const struct nhgui_object_scroll_bar *bar,
+		const struct nhgui_result result
+);
+
+void
+nhgui_object_scroll_bar(
+		struct nhgui_object_scroll_bar *bar,
+		const struct nhgui_context *context,
+		const struct nhgui_render_attribute *scroll_attribute,
+		const struct nhgui_render_attribute *size_attribute,
 		struct nhgui_input *input, 
-		struct nhgui_result result
+		const struct nhgui_result scroll_result,	
+		const struct nhgui_result result	
+);
+
+struct nhgui_result
+nhgui_window_begin(
+		struct nhgui_window *window,
+		const struct nhgui_context *context,
+		const struct nhgui_render_attribute *attribute,
+		const struct nhgui_input *input,
+		const struct nhgui_result result
+);
+
+struct nhgui_result 
+nhgui_window_end(
+		struct nhgui_window *window,
+		const struct nhgui_context *context,
+		const struct nhgui_render_attribute *attribute,
+		struct nhgui_input *input,
+		const struct nhgui_result result
+);
+
+struct nhgui_result
+nhgui_object_text_list(
+		struct nhgui_object_text_list *list,
+		const struct nhgui_context *context,
+		const char *entry[],
+		const uint32_t *entry_length,
+		const uint32_t entry_count,
+		const struct nhgui_object_font *font,
+		const struct nhgui_render_attribute *attribute,
+		struct nhgui_input *input, 
+		const struct nhgui_result result
 
 );
 
 struct nhgui_result 
 nhgui_object_input_field(
-		struct nhgui_context *context,
 		struct nhgui_object_input_field *field,
-		struct nhgui_object_font *font,
-		struct nhgui_render_attribute *attribute,
+		const struct nhgui_context *context,
+		const struct nhgui_object_font *font,
+		const struct nhgui_render_attribute *attribute,
 		struct nhgui_input *input, 
-		struct nhgui_result result,
+		const struct nhgui_result result,
 		char *input_buffer, 
 		uint32_t *input_buffer_length,
-		uint32_t input_buffer_size
+		const uint32_t input_buffer_size
 );
 
 struct nhgui_result 
 nhgui_icon_blank_no_object(
-		struct nhgui_context *context, 
-		struct nhgui_render_attribute *attribute,
-		struct nhgui_input *input, 
-		struct nhgui_result result
+		const struct nhgui_context *context, 
+		const struct nhgui_render_attribute *attribute,
+		const struct nhgui_input *input, 
+		const struct nhgui_result result
 );
 
 struct nhgui_result 
 nhgui_icon_blank(
-		struct nhgui_context *context, 
-		struct nhgui_icon_blank_object *blank,
-		struct nhgui_render_attribute *attribute,
+		struct nhgui_icon_blank *blank,
+		const struct nhgui_context *context, 
+		const struct nhgui_render_attribute *attribute,
 		struct nhgui_input *input, 
-		struct nhgui_result result
+		const struct nhgui_result result
 );
 
 struct nhgui_result 
 nhgui_icon_text_cursor(
-		struct nhgui_context *context, 
-		struct nhgui_render_attribute *attribute,
-		struct nhgui_input *input, 
-		struct nhgui_result result
+		const struct nhgui_context *context, 
+		const struct nhgui_render_attribute *attribute,
+		const struct nhgui_input *input, 
+		const struct nhgui_result result
 );
 
 
 struct nhgui_result
 nhgui_icon_menu(
-		struct nhgui_context *context, 
-		struct nhgui_icon_menu_object *object,
-		struct nhgui_render_attribute *attribute,
-		struct nhgui_input *input, 
-		struct nhgui_result result
+		struct nhgui_icon_menu *object,
+		const struct nhgui_context *context, 
+		const struct nhgui_render_attribute *attribute,
+		const struct nhgui_input *input, 
+		const struct nhgui_result result
 );
 
 
@@ -372,8 +442,8 @@ nhgui_object_font_freetype_deinitialize(struct nhgui_object_font_freetype *freet
 int 
 nhgui_object_font_freetype_characters_initialize(
 		struct nhgui_object_font_freetype *freetype,
-		struct nhgui_context *context,
-		struct nhgui_render_attribute *attribute,
+		const struct nhgui_context *context,
+		const struct nhgui_render_attribute *attribute,
 	       	struct nhgui_object_font *font, 
 	       	const char *filename
 );
@@ -384,53 +454,66 @@ nhgui_object_font_freetype_characters_deinitialize(
 );
 struct nhgui_result
 nhgui_object_font_text_result_centered_by_previous_x(
-		struct nhgui_result result,
-		struct nhgui_context *context, 
-		struct nhgui_object_font *font,
-		struct nhgui_render_attribute *attribute,
+		const struct nhgui_result result,
+		const struct nhgui_context *context, 
+		const struct nhgui_object_font *font,
+		const struct nhgui_render_attribute *attribute,
 		const char *text,
-		uint32_t text_length
+		const uint32_t text_length
 );
 
 
 uint32_t 
 nhgui_object_font_text_overflow_count(
-		struct nhgui_result within, 
-		struct nhgui_context *context,
-		struct nhgui_object_font *font,
-		struct nhgui_render_attribute *attribute,
-		char *text,
-		uint32_t text_length
+		const struct nhgui_result within, 
+		const struct nhgui_context *context,
+		const struct nhgui_object_font *font,
+		const struct nhgui_render_attribute *attribute,
+		const char *text,
+		const uint32_t text_length
 );
 
 float 
 nhgui_object_font_text_delta_y_max(
-		struct nhgui_context *context, 
-		struct nhgui_object_font *font,
-		struct nhgui_render_attribute *attribute,
+		const struct nhgui_context *context, 
+		const struct nhgui_object_font *font,
+		const struct nhgui_render_attribute *attribute,
 		const char *text, 
-		uint32_t text_length 
+		const uint32_t text_length 
 );
 
 struct nhgui_result
 nhgui_object_font_text(
-		struct nhgui_context *context, 
-		struct nhgui_object_font *font,
+		const struct nhgui_context *context, 
+		const struct nhgui_object_font *font,
 		const char *text, 
-		uint32_t text_length, 
-		struct nhgui_render_attribute *attribute,
-		struct nhgui_input *input, 
-		struct nhgui_result result
+		const uint32_t text_length, 
+		const struct nhgui_render_attribute *attribute,
+		const struct nhgui_input *input, 
+		const struct nhgui_result result
 );
+
+struct nhgui_result 
+nhgui_object_font_text_area(
+		const struct nhgui_object_font_text_area *area,
+		const struct nhgui_context *context,
+		const struct nhgui_object_font *font,
+		const struct nhgui_render_attribute *attribute,
+		const struct nhgui_input *input, 
+		const struct nhgui_result result,
+		const char *input_buffer, 
+		const uint32_t input_buffer_size
+);
+
 
 
 struct nhgui_result
 nhgui_object_radio_button(
-		struct nhgui_context *context,
-	       	struct nhgui_object_radio_button_object *object,
-	       	struct nhgui_render_attribute *attribute,
-	       	struct nhgui_input *input,
-	       	struct nhgui_result result
+	       	struct nhgui_object_radio_button *object,
+		const struct nhgui_context *context,
+	       	const struct nhgui_render_attribute *attribute,
+	       	const struct nhgui_input *input,
+	       	const struct nhgui_result result
 );
 
 /* Internal functions */
@@ -495,16 +578,16 @@ GLuint nhgui_shader_vertex_create(
 
 int nhgui_common_uniform_locations_find(
 		struct nhgui_common_uniform_locations *locations, 
-		GLuint program
+		const GLuint program
 );
 
 void nhgui_common_uniform_locations_set(
-		struct nhgui_common_uniform_locations *locations,
-	       	struct nhgui_context *context,
-	       	struct nhgui_input *input,
-	       	struct nhgui_result result,
-	       	float width_mm, float height_mm,
-		float r, float g, float  b
+		const struct nhgui_common_uniform_locations *locations,
+	       	const struct nhgui_context *context,
+	       	const struct nhgui_input *input,
+	       	const struct nhgui_result result,
+	       	const float width_mm, const float height_mm,
+		const float r, const float g, const float b
 );
 int nhgui_surface_initialize(
 		struct nhgui_surface *surface
@@ -515,12 +598,12 @@ void nhgui_surface_deinitialize(
 );
 
 void nhgui_surface_render(
-		struct nhgui_surface *nhgui_surface
+		const struct nhgui_surface *nhgui_surface
 );
 
 void nhgui_surface_render_instanced(
-		struct nhgui_surface *nhgui_surface,
-	       	uint32_t instance_count
+		const struct nhgui_surface *nhgui_surface,
+	       	const uint32_t instance_count
 );
 
 
