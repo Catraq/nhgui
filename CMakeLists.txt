@@ -25,6 +25,7 @@ set(SOURCES
 	"${PROJECT_SOURCE_DIR}/src/nhgui_glfw.c"
 )
 
+add_library(nhgui SHARED ${SOURCES})
 
 add_subdirectory(example/simple)
 add_subdirectory(example/list)

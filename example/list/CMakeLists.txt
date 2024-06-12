@@ -11,10 +11,11 @@ find_package(glfw3 3.0 REQUIRED)
 
 set(CMAKE_C_FLAGS "-Wall")
 
-add_executable(${TEMPLATE} main.c ${SOURCES})
+add_executable(${TEMPLATE} main.c)
  
 set_property(TARGET ${TEMPLATE} PROPERTY C_STANDARD 11)
 
+target_link_libraries(${TEMPLATE} nhgui)
 target_link_libraries(${TEMPLATE} m)
 target_link_libraries(${TEMPLATE} pthread)
 target_link_libraries(${TEMPLATE} ${GLEW_LIBRARIES})
