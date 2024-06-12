@@ -26,6 +26,6 @@ set(SOURCES
 )
 
 
-#add_subdirectory(example/simple)
+add_subdirectory(example/simple)
 add_subdirectory(example/list)
 

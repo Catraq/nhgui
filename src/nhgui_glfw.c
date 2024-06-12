@@ -92,17 +92,17 @@ nhgui_glfw_frame_begin(struct nhgui_glfw_frame *frame, GLFWwindow *window)
 	frame->mouse_button_last = mouse_button;
 	
 	struct nhgui_input input = {
-		.width = width,
-		.height = height,
-		.cursor_x = (uint32_t)x_cursor,
-		.cursor_y = height - (uint32_t)y_cursor,
-		.cursor_x_delta = x_cursor - frame->prev_cursor_x,
-		.cursor_y_delta = height - y_cursor - frame->prev_cursor_y,
+		.width_pixel = width,
+		.height_pixel = height,
+		.cursor_x_pixel = (uint32_t)x_cursor,
+		.cursor_y_pixel = height - (uint32_t)y_cursor,
+		.cursor_x_delta_pixel = x_cursor - frame->prev_cursor_x,
+		.cursor_y_delta_pixel = height - y_cursor - frame->prev_cursor_y,
 		.cursor_button_left = mouse_button_state,
 		.cursor_button_left_press = mouse_button_left_pressed, 
 		.key_backspace_state = backspace_key_state,
-		.deltatime = deltatime,
-		.time = frame->total_time,
+		.deltatime_sec = deltatime,
+		.time_sec = frame->total_time,
 		.selected_new = frame->input_selected_new,
 		.selected_new_raise = 0,
 

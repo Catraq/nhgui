@@ -435,24 +435,22 @@ int main(int args, char *argv[])
 
 	while(!glfwWindowShouldClose(window))
 	{
-
 		struct nhgui_input input = nhgui_glfw_frame_begin(&frame, window);
 
-		glDisable(GL_SCISSOR_TEST);
 		glClearColor(0.1, 0.5, 0.5, 0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glViewport(
 			0, 
 			0, 
-			input.width,
-			input.height
+			input.width_pixel,
+			input.height_pixel
 		);
-		
-		glEnable(GL_SCISSOR_TEST);
+	
+
 
 		struct nhgui_result result = {
-			.y_mm = context.height_mm * (float)input.height/(float)context.res_y,
-			.y_min_mm = context.height_mm * (float)input.height/(float)context.res_y
+			.y_mm = context.screen_height_mm * (float)input.height_pixel/(float)context.screen_resolution_y,
+			.y_min_mm = context.screen_height_mm * (float)input.height_pixel/(float)context.screen_resolution_x
 		};
 		
 		/* Top left */

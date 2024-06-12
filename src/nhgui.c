@@ -4,16 +4,16 @@
 
 int nhgui_context_initialize(
 		struct nhgui_context *context,
-	       	uint32_t res_x, uint32_t res_y,
+	       	uint32_t screen_resolution_x, uint32_t screen_resolution_y,
 	       	uint32_t width_mm, uint32_t height_mm
 )
 {
 	int result = 0;
 
-	context->width_mm = width_mm;
-	context->height_mm = height_mm;
-	context->res_x = res_x;
-	context->res_y = res_y;
+	context->screen_width_mm = width_mm;
+	context->screen_height_mm = height_mm;
+	context->screen_resolution_x = screen_resolution_x;
+	context->screen_resolution_y = screen_resolution_y;
 
 	/* Common surface used for rendering operations */
 	result = nhgui_surface_initialize(&context->surface);
@@ -165,12 +165,12 @@ nhgui_common_uniform_locations_set(
 	       	const float b)
 {
 	/* Scale by window relative resolution and calcuate mm per 1.0 unit mul with actual height and width */	
-	float s_x = (float)context->res_x/(float)input->width * 1.0 /(float)context->width_mm * width_mm;
-	float s_y = (float)context->res_y/(float)input->height * 1.0 /(float)context->height_mm * height_mm;
+	float s_x = (float)context->screen_resolution_x/(float)input->width_pixel * 1.0 /(float)context->screen_width_mm * width_mm;
+	float s_y = (float)context->screen_resolution_y/(float)input->height_pixel * 1.0 /(float)context->screen_height_mm * height_mm;
 
 	/* Negative as we grow down. */	
-	float p_y = (float)context->res_y/(float)input->height * 1.0/(float)context->height_mm * (result.y_mm + result.y_offset_mm);
-	float p_x = (float)context->res_x/(float)input->width * 1.0/(float)context->width_mm * (result.x_mm + result.x_offset_mm);
+	float p_y = (float)context->screen_resolution_y/(float)input->height_pixel * 1.0/(float)context->screen_height_mm * (result.y_mm + result.y_offset_mm);
+	float p_x = (float)context->screen_resolution_x/(float)input->width_pixel * 1.0/(float)context->screen_width_mm * (result.x_mm + result.x_offset_mm);
 	
 	/* Convert to gl cordinates [-1, 1] and move down with size otherwise the element will be above the screen */ 
 	p_y = 2.0*p_y-1.0;
@@ -179,7 +179,7 @@ nhgui_common_uniform_locations_set(
 	glUniform2f(locations->position, p_x, p_y);
 	glUniform2f(locations->size, s_x, s_y);
 	glUniform3f(locations->color, r, g, b);
-	glUniform2ui(locations->dimension, input->width, input->height);
+	glUniform2ui(locations->dimension, input->width_pixel, input->height_pixel);
 
 }
 
@@ -226,14 +226,6 @@ nhgui_result_rewind_x_to(struct nhgui_result result, struct nhgui_result to)
 	result.x_mm = to.x_mm;
 	result.x_inc_next = 0;
 	return result;
-}
-
-struct nhgui_result
-nhgui_result_rewind_y(struct nhgui_result result)
-{
-	result.y_mm = 0;
-	return result;
-
 }
 
 GLuint nhgui_shader_vertex_create_from_file(
@@ -493,8 +485,8 @@ nhgui_icon_blank(
 {
 	const struct nhgui_icon_blank_instance *instance = &context->blank;
 
-	float cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
-	float cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
+	float cursor_x_mm = (float)input->width_pixel / (float)context->screen_resolution_x * (float)context->screen_width_mm/(float)input->width_pixel * (float)input->cursor_x_pixel;
+	float cursor_y_mm = (float)input->height_pixel / (float)context->screen_resolution_y * (float)context->screen_height_mm/(float)input->height_pixel * (float)input->cursor_y_pixel;
 	
 	struct nhgui_result result_tmp = result;
 	result_tmp.y_mm -= attribute->height_mm;
@@ -646,8 +638,8 @@ nhgui_icon_menu(
 
 	const struct nhgui_icon_menu_instance *instance = &context->menu;
 
-	float cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
-	float cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
+	float cursor_x_mm = (float)input->width_pixel / (float)context->screen_resolution_x * (float)context->screen_width_mm/(float)input->width_pixel * (float)input->cursor_x_pixel;
+	float cursor_y_mm = (float)input->height_pixel / (float)context->screen_resolution_y * (float)context->screen_height_mm/(float)input->height_pixel * (float)input->cursor_y_pixel;
 	
 	struct nhgui_result result_tmp = result;
 	result_tmp.y_mm -= attribute->height_mm;
@@ -740,8 +732,8 @@ nhgui_icon_text_cursor(
 	);
 
 	/* Make the cursor bllink */
-	uint32_t time_sec = (uint32_t)input->time;
-	float r = input->time - time_sec;
+	uint32_t time_sec = (uint32_t)input->time_sec;
+	float r = input->time_sec - time_sec;
 	if(r < 0.5f)
 		nhgui_surface_render(&context->surface);
 	
@@ -838,7 +830,7 @@ nhgui_object_font_text_overflow_count(
 	{
 		unsigned char c = text[i];
 		float ratio = attribute->height_mm/font->height_mm;
-		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
+		float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
 		
 		float new_x_mm = x_mm + (float)(font->character[c].advance_x >> 6) * mm_per_pixel_x;
 		/* See if it is past the boudning box */
@@ -926,8 +918,8 @@ nhgui_object_scroll_bar(
 		{
 			/* Allow moving the scroll bar */	
 			float scroll_area_mm = y_mm_size - scroll_bar_size_mm;
-			float mm_per_pixel = (float)context->height_mm/(float)context->res_y;
-			float scroll_in_mm = input->cursor_y_delta * mm_per_pixel;
+			float mm_per_pixel = (float)context->screen_height_mm/(float)context->screen_resolution_y;
+			float scroll_in_mm = input->cursor_y_delta_pixel * mm_per_pixel;
 			float max_scroll = bar->scroll_y_mm + scroll_in_mm < scroll_area_mm ? scroll_in_mm : bar->scroll_y_mm + scroll_in_mm - scroll_area_mm;
 			bar->scroll_y_mm = bar->scroll_y_mm-max_scroll > 0 ? bar->scroll_y_mm-max_scroll : 0;
 
@@ -968,18 +960,23 @@ nhgui_object_scroll_bar(
 		if(bar->blank_scroll_x.pressed > 0)
 		{
 			float scroll_area_mm = x_mm_size - scroll_bar_size_mm - x_mm_used;
-			float mm_per_pixel = (float)context->width_mm/(float)context->res_x;
-			float scroll_in_mm = input->cursor_x_delta * mm_per_pixel;
+			float mm_per_pixel = (float)context->screen_width_mm/(float)context->screen_resolution_x;
+			float scroll_in_mm = input->cursor_x_delta_pixel * mm_per_pixel;
 			float max_scroll = bar->scroll_x_mm + scroll_in_mm < 0 ? 0 : scroll_in_mm;
 			bar->scroll_x_mm = bar->scroll_x_mm+max_scroll < scroll_area_mm ? bar->scroll_x_mm+max_scroll : scroll_area_mm;
 		}
+		else
+		{
+			float scroll_area_mm = x_mm_size - scroll_bar_size_mm - x_mm_used;
+			bar->scroll_x_mm = bar->scroll_x_mm < scroll_area_mm ? bar->scroll_x_mm : scroll_area_mm;
+		}
 
 	}
-	/* Reset scroll if there are no overfllow */
 	else
 	{
 		bar->scroll_x_mm = 0;
 	}
+	
 
 
 }
@@ -999,8 +996,8 @@ nhgui_window_begin(
 	
 	/* Compute the screen coordinates of the window and only alllow drawing 
 	 * to the pixels within the area using scissor test in opengl. */	
-	float x_pixels_per_mm = (float)context->res_x/(float)context->width_mm;
-	float y_pixels_per_mm = (float)context->res_y/(float)context->height_mm;
+	float x_pixels_per_mm = (float)context->screen_resolution_x/(float)context->screen_width_mm;
+	float y_pixels_per_mm = (float)context->screen_resolution_y/(float)context->screen_height_mm;
 	
 	uint32_t x = result.x_mm * x_pixels_per_mm;
 	uint32_t y = (result.y_mm - attribute->height_mm)*y_pixels_per_mm < 0 ? 0 : (result.y_mm - attribute->height_mm)*y_pixels_per_mm; 
@@ -1008,6 +1005,7 @@ nhgui_window_begin(
 	uint32_t width = attribute->width_mm * x_pixels_per_mm;
 	uint32_t height = (attribute->height_mm - height_remove_mm) * y_pixels_per_mm;
 
+	glEnable(GL_SCISSOR_TEST);
 	glScissor(
 		x,
 		y,
@@ -1035,6 +1033,8 @@ nhgui_window_end(
 {
 	
 	struct nhgui_result window_result = window->result_begin;
+
+	glDisable(GL_SCISSOR_TEST);
 
 	window_result.x_inc_next = attribute->width_mm;
 	window_result.y_inc_next = attribute->height_mm;
@@ -1077,8 +1077,8 @@ nhgui_object_text_list(
 )
 {
 
-	float cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
-	float cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
+	float cursor_x_mm = (float)input->width_pixel / (float)context->screen_resolution_x * (float)context->screen_width_mm/(float)input->width_pixel * (float)input->cursor_x_pixel;
+	float cursor_y_mm = (float)input->height_pixel / (float)context->screen_resolution_y * (float)context->screen_height_mm/(float)input->height_pixel * (float)input->cursor_y_pixel;
 
 	if(list->selected_prev > 0)
 	{
@@ -1149,7 +1149,7 @@ nhgui_object_text_list(
 			
 			if(overflow_count > 0 && list->char_scroll_per_sec > 0)
 			{
-				uint32_t s = input->time/list->char_scroll_per_sec;
+				uint32_t s = input->time_sec/list->char_scroll_per_sec;
 				overflow_count_index = s%overflow_count;
 			}
 
@@ -1198,7 +1198,7 @@ nhgui_object_text_list(
 
 			if(overflow_count > 0 && list->char_scroll_per_sec > 0)
 			{
-				uint32_t s = input->time/list->char_scroll_per_sec;
+				uint32_t s = input->time_sec/list->char_scroll_per_sec;
 				overflow_count_index = (overflow_count + s)%overflow_count;
 			}
 
@@ -1348,7 +1348,7 @@ nhgui_object_input_field(
 	{
 		unsigned char c = input_buffer[i];
 		float ratio = attribute->height_mm/font->height_mm;
-		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
+		float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
 		
 		float cursor_mm = attribute->height_mm;
 		float new_x_mm = x_mm + (float)(font->character[c].advance_x >> 6) * mm_per_pixel_x + cursor_mm;
@@ -1368,15 +1368,15 @@ nhgui_object_input_field(
 	struct nhgui_result cursor_result = background_result ;
 	if(field->blank_object.clicked > 0)
 	{
-		float cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
-		float cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
+		float cursor_x_mm = (float)input->width_pixel / (float)context->screen_resolution_x * (float)context->screen_width_mm/(float)input->width_pixel * (float)input->cursor_x_pixel;
+		float cursor_y_mm = (float)input->height_pixel / (float)context->screen_resolution_y * (float)context->screen_height_mm/(float)input->height_pixel * (float)input->cursor_y_pixel;
 		
 		uint32_t index_found = 0;
 		for(uint32_t i = overflow_count; i < *input_buffer_length; i++)
 		{
 			unsigned char c = input_buffer[i];
 			float ratio = attribute->height_mm/font->height_mm;
-			float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
+			float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
 			float x_mm_inc = (font->character[c].advance_x >> 6) * mm_per_pixel_x;
 			if(cursor_x_mm > cursor_result.x_mm && cursor_x_mm < cursor_result.x_mm + x_mm_inc
 			&& cursor_y_mm > cursor_result.y_mm - attribute->height_mm && cursor_y_mm < cursor_result.y_mm)
@@ -1400,7 +1400,7 @@ nhgui_object_input_field(
 		{
 			unsigned char c = input_buffer[i];
 			float ratio = attribute->height_mm/font->height_mm;
-			float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
+			float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
 			float x_mm_inc = (font->character[c].advance_x >> 6) * mm_per_pixel_x;
 			cursor_result.x_mm += x_mm_inc;
 		}
@@ -1425,7 +1425,7 @@ nhgui_object_input_field(
 		/* Find width of character at cursor index. */
 		unsigned char c = input_buffer[field->cursor_index];
 		float ratio = attribute->height_mm/font->height_mm;
-		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
+		float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
 		float cursor_width_mm = font->character[c].width * mm_per_pixel_x;
 		
 		cursor_attribute.width_mm = cursor_width_mm;
@@ -1507,7 +1507,7 @@ nhgui_object_font_freetype_characters_initialize(
 	
 	/* Generate characters with specified height. The width is auto 
 	 * scaled depending on chracter */	
-	uint32_t pixels_per_mm = context->res_y/context->height_mm;
+	uint32_t pixels_per_mm = context->screen_resolution_y/context->screen_height_mm;
 	FT_Set_Pixel_Sizes(face, 0, attribute->height_mm * pixels_per_mm);
 
 	font->height_mm = attribute->height_mm;
@@ -1651,7 +1651,7 @@ nhgui_object_font_text_result_centered_by_previous_x(
 	{
 		unsigned char c = text[i];
 		float ratio = attribute->height_mm/font->height_mm;
-		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
+		float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
 
 		if(i != text_length-1)
 			x_mm += (font->character[c].advance_x >> 6) * mm_per_pixel_x;
@@ -1676,7 +1676,7 @@ nhgui_object_font_text_delta_y_max(
 	{	
 		unsigned char c = (unsigned char)text[i];
 		float ratio = attribute->height_mm/font->height_mm;
-		float mm_per_pixel_y = ratio * (float)context->height_mm/(float)context->res_y;
+		float mm_per_pixel_y = ratio * (float)context->screen_height_mm/(float)context->screen_resolution_y;
 
 		float delta  = font->character[c].height * mm_per_pixel_y;
 		
@@ -1719,8 +1719,8 @@ nhgui_object_font_text(
 		unsigned char c = (unsigned char)text[i];
 
 
-		float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
-		float mm_per_pixel_y = ratio * (float)context->height_mm/(float)context->res_y;
+		float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
+		float mm_per_pixel_y = ratio * (float)context->screen_height_mm/(float)context->screen_resolution_y;
 		
 		float width_mm = (float)font->character[c].width * mm_per_pixel_x;
 		float height_mm = (float)font->character[c].height * mm_per_pixel_y;
@@ -1799,7 +1799,7 @@ nhgui_object_font_text_area(
 		{
 			unsigned char c = input_buffer[i];
 			float ratio = attribute->height_mm/font->height_mm;
-			float mm_per_pixel_x = ratio * (float)context->width_mm/(float)context->res_x;
+			float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
 			
 			float new_x_mm = x_mm + (float)(font->character[c].advance_x >> 6) * mm_per_pixel_x;
 			
@@ -1868,8 +1868,8 @@ nhgui_object_radio_button(
 	 * then calculate pixels per mm  and mutiply by cursor position.
 	 * */
 
-	float cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
-	float cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
+	float cursor_x_mm = (float)input->width_pixel / (float)context->screen_resolution_x * (float)context->screen_width_mm/(float)input->width_pixel * (float)input->cursor_x_pixel;
+	float cursor_y_mm = (float)input->height_pixel / (float)context->screen_resolution_y * (float)context->screen_height_mm/(float)input->height_pixel * (float)input->cursor_y_pixel;
 
 	struct nhgui_result result_tmp = result;
 	result_tmp.y_mm -= attribute->height_mm;
@@ -1892,11 +1892,11 @@ nhgui_object_radio_button(
 
 
 	/* Scale by window relative resolution and calcuate mm per 1.0 unit mul with actual height and width */	
-	float s_x = (float)context->res_x/(float)input->width * 1.0 /(float)context->width_mm * (float)attribute->height_mm;
-	float s_y = (float)context->res_y/(float)input->height * 1.0 /(float)context->height_mm * (float)attribute->height_mm;
+	float s_x = (float)context->screen_resolution_x/(float)input->width_pixel * 1.0 /(float)context->screen_width_mm * (float)attribute->height_mm;
+	float s_y = (float)context->screen_resolution_y/(float)input->height_pixel * 1.0 /(float)context->screen_height_mm * (float)attribute->height_mm;
 
-	float p_y = (float)context->res_y/(float)input->height * 1.0/(float)context->height_mm * result_tmp.y_mm;
-	float p_x = (float)context->res_x/(float)input->width * 1.0/(float)context->width_mm * result_tmp.x_mm; ;
+	float p_y = (float)context->screen_resolution_y/(float)input->height_pixel * 1.0/(float)context->screen_height_mm * result_tmp.y_mm;
+	float p_x = (float)context->screen_resolution_x/(float)input->width_pixel * 1.0/(float)context->screen_width_mm * result_tmp.x_mm; ;
 	
 	/* Convert to gl cordinates [-1, 1] and move down with size otherwise the element will be above the screen */ 
 	p_y = 2.0*p_y-1.0;
@@ -1911,7 +1911,7 @@ nhgui_object_radio_button(
 	glUniform1ui(instance->location_checked, object->checked);
 	glUniform2f(instance->location_position, p_x, p_y);
 	glUniform2f(instance->location_size, s_x, s_y);
-	glUniform2ui(instance->location_dimension, input->width, input->height);
+	glUniform2ui(instance->location_dimension, input->width_pixel, input->height_pixel);
 
 	nhgui_surface_render(&context->surface);
 

@@ -3,86 +3,9 @@
 
 #include <string.h>
 
+#include "math/vec.h"
 #include "nhgui_glfw.h"
 #include "nhgui.h"
-
-
-struct nhgui_object_text_list_object
-{
-	uint32_t selected;
-	uint32_t selecteed_index;
-};
-
-
-struct nhgui_result
-nhgui_object_text_list(
-		struct nhgui_context *context,
-		struct nhgui_object_text_list_object *object,
-		char *entry[],
-		uint32_t *entry_length,
-		uint32_t entry_count,
-		struct nhgui_object_font_character character[128], 
-		struct nhgui_render_attribute *attribute,
-		struct nhgui_input *input, 
-		struct nhgui_result result
-
-)
-{
-	
-	struct nhgui_render_attribute font_attribute = 
-	{
-		.height_mm = attribute->height_mm,
-		.r = 1.0f,	
-		.g = 1.0f, 
-		.b = 1.0f
-	};
-
-	for(uint32_t i = 0; i < entry_count; i++)
-	{
-#if 0
-		float cursor_x_mm = (float)input->width / (float)context->res_x * (float)context->width_mm/(float)input->width * (float)input->cursor_x;
-		float cursor_y_mm = (float)input->height / (float)context->res_y * (float)context->height_mm/(float)input->height * (float)input->cursor_y;
-	
-		struct nhgui_result result_tmp = result;
-		result_tmp.y_mm -= attribute->height_mm;
-		
-		if(cursor_x_mm > result_tmp.x_mm && cursor_x_mm < result_tmp.x_mm + attribute->width_mm 
-		&& cursor_y_mm > result_tmp.y_mm && cursor_y_mm < result_tmp.y_mm + attribute->height_mm)
-		{
-			field->selected = field->selected ? 0 : 1;
-			field->selected_prev = field->selected;
-
-			if(field->selected > 0){
-				input->selected_new = 1;	
-			}
-		}	
-#endif 
-
-		nhgui_icon_blank(
-				context,
-				attribute,
-				input,
-				result
-		);
-
-
-		result = nhgui_object_font_text(
-				context, 
-				character, 
-				entry[i],
-				entry_length[i],
-				&font_attribute,
-				input, 
-				result
-		);
-
-		result = nhgui_result_dec_y(result);
-
-	}
-
-	return result;
-}
-
 
 
 int main(int args, char *argv[])
@@ -123,9 +46,6 @@ int main(int args, char *argv[])
 
 	glfwMakeContextCurrent(window);
 	
-	/* Disable vertical sync */
-	//glfwSwapInterval(0);
-
   	
        	/* Enable Version 3.3 */
 	glewExperimental = 1;
@@ -171,8 +91,7 @@ int main(int args, char *argv[])
 
 
 	const char *font_filename = "../data/UbuntuMono-R.ttf";
-	struct nhgui_object_font_character character[128];
-	struct nhgui_object_font_character radio_character[128];
+	struct nhgui_object_font font;
 
 	{
 		struct nhgui_object_font_freetype font_freetype;
@@ -186,7 +105,7 @@ int main(int args, char *argv[])
 				&font_freetype,
 				&context,
 				&font_render_attribute ,
-				character, 
+				&font, 
 				font_filename
 		);
 
@@ -196,28 +115,14 @@ int main(int args, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 	
-		result = nhgui_object_font_freetype_characters_initialize(
-				&font_freetype,
-				&context,
-				&radio_render_attribute,
-				radio_character, 
-				font_filename
-		);
-
-		if(result < 0)
-		{
-			fprintf(stderr, "nhgui_object_font_freetype_characters_initialize() failed. \n");
-			exit(EXIT_FAILURE);
-		}
-
 
 		nhgui_object_font_freetype_deinitialize(&font_freetype);
 	}
 
 	
 
-	uint32_t radio_button_row = 5;
-	struct 	nhgui_object_radio_button_object radio_button_object[radio_button_row];
+	const uint32_t radio_button_row = 5;
+	struct 	nhgui_object_radio_button radio_button_object[radio_button_row];
 
 
 
@@ -229,27 +134,27 @@ int main(int args, char *argv[])
 		"I may not have hope and dreams."
 	};
 
-
+	struct nhgui_window nhwindow = {};
 
 
 	struct nhgui_render_attribute menu_render_attribute = {
 		.height_mm = 10,
 	};
-	struct nhgui_icon_menu_object menu_object;
+	struct nhgui_icon_menu menu_object = {};
 
 	/* Search input field */
 	const uint32_t input_buffer_size = 32;
 	uint32_t input_buffer_length = 0;
 	char input_buffer[input_buffer_size];
-	struct nhgui_object_input_field input_field;
+	struct nhgui_object_input_field input_field = {};
 
 	/* Add input field */
 	const uint32_t add_buffer_size = 32;
 	uint32_t add_buffer_length = 0;
 	char add_buffer[input_buffer_size];
-	struct nhgui_object_input_field add_field;
+	struct nhgui_object_input_field add_field = {};
 
-	struct nhgui_object_text_list_object list_object;
+	struct nhgui_object_text_list list_object = {};
 	uint32_t list_entries_length[] = 
 	{
 		strlen(radio_button_text[0]), 	
@@ -259,74 +164,144 @@ int main(int args, char *argv[])
 		strlen(radio_button_text[4]), 	
 	};
 
-	struct nhgui_result render_result = {};
-	struct nhgui_glfw_frame frame = nhgui_frame_create();
+	struct nhgui_glfw_frame frame = nhgui_frame_create(window);
 
 	while(!glfwWindowShouldClose(window))
 	{
 
 		struct nhgui_input input = nhgui_glfw_frame_begin(&frame, window);
 
-		glViewport(0, 0, input.width, input.height);
+		glDisable(GL_SCISSOR_TEST);
 		glClearColor(0.1, 0.5, 0.5, 0);
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		struct nhgui_result render_result_start = render_result;
-		render_result_start.x_mm = 0;
-		render_result_start.y_mm = context.height_mm * (float)input.height/(float)context.res_y;
+		glViewport(
+			0, 
+			0, 
+			input.width_pixel,
+			input.height_pixel
+		);
 		
+		glEnable(GL_SCISSOR_TEST);
+
+		struct nhgui_result result = {
+			.y_mm = context.screen_height_mm * (float)input.height_pixel/(float)context.screen_resolution_y,
+			.y_min_mm = context.screen_height_mm * (float)input.height_pixel/(float)context.screen_resolution_y
+		};
+
+		struct nhgui_render_attribute window_attribute = 
+		{
+			.width_mm = context.screen_width_mm * (float)input.width_pixel/(float)context.screen_resolution_x,
+			.height_mm = context.screen_height_mm * (float)input.height_pixel/(float)context.screen_resolution_y
+		};
+
+
+		result = nhgui_window_begin(
+			&nhwindow,
+			&context,
+			&window_attribute,
+			&input,
+			result	
+		);
+
+
 		
 		/* Menu button */
-		render_result = nhgui_result_margin(render_result_start, 1, 1);
-		struct nhgui_result m_render_result = nhgui_icon_menu(&context, &menu_object, &menu_render_attribute, &input, render_result);
+		result = nhgui_result_margin(result, 1, 1);
+		struct nhgui_result m_render_result = nhgui_icon_menu(
+				&menu_object,
+				&context,
+			       	&menu_render_attribute,
+			       	&input,
+			       	result
+		);
 
-		render_result = nhgui_result_dec_y(m_render_result);
-		m_render_result = nhgui_result_inc_x(m_render_result);
+		result = nhgui_result_dec_y(m_render_result);
 
 		/* Menu button text */
 		const char menu_text[] = "menu";
-		render_result = nhgui_result_margin(render_result, 0, 1);
+		result = nhgui_result_margin(result, 0, 1);
 		struct nhgui_result c_render_result = nhgui_object_font_text_result_centered_by_previous_x(
-				render_result, 
+				result, 
 				&context, 
-				radio_character, 
+				&font, 
+				&radio_render_attribute,
 				menu_text,
 				sizeof(menu_text)
 		);
 
-
-		render_result = nhgui_object_font_text(
+		result = nhgui_object_font_text(
 				&context, 
-				radio_character, 
+				&font, 
 				menu_text,
 				sizeof(menu_text),
 				&radio_render_attribute,
 				&input, 
 				c_render_result
 		);
+		result = nhgui_result_dec_y(result);
+		if(menu_object.clicked)
+		{
+			for(uint32_t j = 0; j < radio_button_row; j++)
+			{
 
-		render_result = nhgui_result_dec_y(render_result);
+				result = nhgui_result_margin(result, 0, 1);
+
+				uint32_t index = j;
+				result = nhgui_object_radio_button(
+						&radio_button_object[index], 
+						&context,
+						&radio_render_attribute, 
+						&input,
+					       	result
+				);
+				
+				result = nhgui_result_inc_x(result);
+				result = nhgui_result_margin(result, 2, 0);
+
+				result = nhgui_object_font_text(
+						&context, 
+						&font, 
+						radio_button_text[j], 
+						strlen(radio_button_text[j]), 
+						&radio_render_attribute,
+						&input, 
+						result
+				);
+
+				
+				result = nhgui_result_margin(result, 0, 1);
+
+				result = nhgui_result_rewind_x_to(result, c_render_result);
+				result = nhgui_result_dec_y(result);
+
+			}
+					
+		}
+		
+		result = nhgui_result_dec_y(result);
+		result = nhgui_result_rewind_x_to(result, m_render_result);
 
 		struct nhgui_result res = nhgui_object_input_field(
-				&context,
 				&input_field, 
-				radio_character, 
+				&context,
+				&font, 
 				&radio_render_attribute,
 				&input, 
-				m_render_result,
+				result,
 				input_buffer, 
 				&input_buffer_length,
 				input_buffer_size
-		);
 		
+		);
+
 		res = nhgui_result_dec_y(res);	
 		res = nhgui_result_rewind_x_to(res, m_render_result); 
 		res = nhgui_result_margin(res, 0, 1);	
 			
 		res = nhgui_object_input_field(
-				&context,
 				&add_field, 
-				radio_character, 
+				&context,
+				&font, 
 				&radio_render_attribute,
 				&input, 
 				res,
@@ -339,75 +314,43 @@ int main(int args, char *argv[])
 		res = nhgui_result_rewind_x_to(res, m_render_result); 
 
 		res = nhgui_object_text_list(
-				&context, 
 				&list_object,
+				&context, 
 				radio_button_text,
 				list_entries_length,
 				5, 
-				radio_character, 
+				&font, 
 				&radio_render_attribute,
 				&input, 
 				res
 		);
 
 
-		
 	
 
 
-
-		if(menu_object.clicked)
-		{
-			struct nhgui_result radio_init_result = c_render_result;
-			for(uint32_t j = 0; j < radio_button_row; j++)
-			{
-				render_result.x_mm = radio_init_result.x_mm;
-
-				render_result = nhgui_result_margin(render_result, 0, 1);
-
-				uint32_t index = j;
-				render_result = nhgui_object_radio_button(
-						&context,
-						&radio_button_object[index], 
-						&radio_render_attribute, 
-						&input,
-					       	render_result
-				);
-				
-				render_result = nhgui_result_inc_x(render_result);
-				render_result = nhgui_result_margin(render_result, 2, 0);
-
-				render_result = nhgui_object_font_text(
-						&context, 
-						radio_character, 
-						radio_button_text[j], 
-						strlen(radio_button_text[j]), 
-						&radio_render_attribute,
-						&input, 
-						render_result
-				);
-
-				
-				render_result = nhgui_result_margin(render_result, 0, 1);
-
-				render_result = nhgui_result_rewind_x(render_result);
-				render_result = nhgui_result_dec_y(render_result);
-
-			}
-					
-		}
-		
+	#if 0	
 		const char test_string[] = "Test string";
 
 		nhgui_object_font_text(
 				&context, 
-				character, 
+				&font, 
 				test_string, 
 				sizeof(test_string), 
 				&font_render_attribute,
 				&input, 
-				render_result
+				result
 		);
+#endif 
+
+		nhgui_window_end(
+				&nhwindow,
+				&context,
+				&window_attribute,
+				&input,
+				result	
+		);
+
 
 		nhgui_glfw_frame_end(&frame, &input);	
 		glfwSwapBuffers(window);

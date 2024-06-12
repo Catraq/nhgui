@@ -17,6 +17,10 @@
 #define NHGUI_INPUT_MAX 32
 #define NGGUI_SHADER_FILE_MAX_SIZE 8192
 
+/* 
+ * Attributes of the rendered object. Note that the attribute 
+ * used depends. */
+
 struct nhgui_render_attribute
 {
 	/* Height of the element */
@@ -31,6 +35,10 @@ struct nhgui_render_attribute
 	float r,g,b;
 };
 
+/* 
+ * Used for determening where the object shall be drawn. Returned 
+ * by each object after drawing to indicate next position to draw to
+ */
 struct nhgui_result
 {
 	/* Offset the x_mm and y_mm with these values */
@@ -51,19 +59,29 @@ struct nhgui_result
 	
 };
 
-
+/* Input from the user.
+ *
+ * Also used for managing input of the objects. 
+ * */
 struct nhgui_input
-{
-	/* Width and height of the window */
-	uint32_t width;
-	uint32_t height;
+{	
+	/* Frame delta */
+	float deltatime_sec;
+
+	/* Secounds since application start */
+	float time_sec;
+
+	/* Width and height of the window in pixels*/
+	uint32_t width_pixel;
+	uint32_t height_pixel;
 
 	/* Cursor location with 0,0 in lower left */
-	float cursor_x;
-	float cursor_y;
-
-	float cursor_x_delta;
-	float cursor_y_delta;
+	float cursor_x_pixel;
+	float cursor_y_pixel;
+	
+	/* Pixel delta from last frame */
+	float cursor_x_delta_pixel;
+	float cursor_y_delta_pixel;
 
 	/* > 0 if the left cursor button have been clicked */
 	uint32_t cursor_button_left;
@@ -74,16 +92,15 @@ struct nhgui_input
 	/* > 0 if the backspace key have been pressed */
 	uint32_t key_backspace_state;
 	
-	/* Frame delta */
-	float deltatime;
-
-	/* Secounds since application start */
-	float time;
-	
 	/* > 0 then deselect selected. */
 	uint32_t selected_new;
 
-	/* >  0 then next iteration will selected_new be 1 */
+	/* >  0 then next iteration will selected_new be 1.
+	 *
+	 * If a object is selected or pressed is this raised such 
+	 * that previous object can look for selected_new > 0 and 
+	 * become deselected 
+	 * */
 	uint32_t selected_new_raise;
 	
 	/* Input from keyboard */	
@@ -93,6 +110,9 @@ struct nhgui_input
 
 };
 
+/* 
+ * Opengl uniform locations 
+ */
 struct nhgui_common_uniform_locations
 {
 	GLint position;
@@ -101,6 +121,7 @@ struct nhgui_common_uniform_locations
 	GLint dimension;
 };
 
+/* Quad used for rendering */
 struct nhgui_surface
 {
 	GLuint vertex_array;
@@ -109,6 +130,9 @@ struct nhgui_surface
 	GLuint draw_count;
 };
 
+/* Each object have a instance that is used for seting up the rendering 
+ * of the object 
+ */
 
 struct nhgui_icon_menu_instance
 {
@@ -116,12 +140,6 @@ struct nhgui_icon_menu_instance
 
 	struct nhgui_common_uniform_locations locations;
 };
-
-struct nhgui_icon_menu
-{
-	uint8_t clicked;
-};
-
 
 struct nhgui_icon_text_cursor_instance 
 {
@@ -164,8 +182,15 @@ struct nhgui_object_font_character
 
 struct nhgui_object_font
 {
+	/* Height used for generating the fonts.
+	 * Used for scaling 
+	 * */
 	float height_mm;
+	/* Max delta in y of characters.
+	 * Used for centering text in y direction
+	 * */
 	float delta_y_max;
+
 	struct nhgui_object_font_character character[128];
 };
 
@@ -186,6 +211,12 @@ struct nhgui_object_radio_button_instance
 	GLint location_position;
 	GLint location_size;
 };
+
+struct nhgui_icon_menu
+{
+	uint8_t clicked;
+};
+
 
 struct nhgui_object_radio_button
 {
@@ -246,7 +277,10 @@ struct nhgui_object_text_list
 
 struct nhgui_context
 {
+	/* Surface used for rendering */
 	struct nhgui_surface surface;
+
+	/* Instance of each of the objects. Used for rendering */
 
 	struct nhgui_icon_text_cursor_instance text_cursor;
 
@@ -259,12 +293,12 @@ struct nhgui_context
 	struct nhgui_icon_menu_instance menu;
 
 	/* Screen width and height in mm. */
-	uint32_t width_mm;
-	uint32_t height_mm;
+	uint32_t screen_width_mm;
+	uint32_t screen_height_mm;
 	
 	/* Screen resolution */
-	uint32_t res_x;
-	uint32_t res_y;
+	uint32_t screen_resolution_x;
+	uint32_t screen_resolution_y;
 };
 
 struct nhgui_object_scroll_bar 
@@ -300,13 +334,17 @@ struct nhgui_object_font_text_area
 };
 
 
-
+/* 
+ * Initialize the nhgui context. 
+ *
+ * It is the first function that should be called.
+ */
 
 
 int nhgui_context_initialize(
 		struct nhgui_context *context,
-	       	uint32_t res_x, uint32_t res_y,
-	       	uint32_t width_mm, uint32_t height_mm
+	       	uint32_t screen_resolution_x, uint32_t screen_resolution_y,
+	       	uint32_t screen_width_mm, uint32_t screen_height_mm
 );
 
 void nhgui_context_deinitialize(
@@ -315,32 +353,58 @@ void nhgui_context_deinitialize(
 
 
 
-
+/* 
+ * Add margin in x and y direction. Dont forget to add margin after drawing the object
+ * for margin on both sides
+ */
 struct nhgui_result 
 nhgui_result_margin(struct nhgui_result result, float margin_x_mm, float margin_y_mm);
 
+/* 
+ * Move the x-cooordinate past the previous drawed object in x direction.
+ * */
 struct nhgui_result
 nhgui_result_inc_x(struct nhgui_result result);
 
 
+/* 
+ * Move the y-cooordinate past the previous drawed object in y direction.
+ * */
 struct nhgui_result
 nhgui_result_dec_y(struct nhgui_result result);
 
+/* 
+ * Rewind the x coordinate to 0 
+ */
 struct nhgui_result
 nhgui_result_rewind_x(struct nhgui_result result);
 
+/* 
+ * Rewind the x coordinate to the same x as in to 
+ */
 struct nhgui_result
 nhgui_result_rewind_x_to(struct nhgui_result result, struct nhgui_result to);
 
-struct nhgui_result
-nhgui_result_rewind_y(struct nhgui_result result);
-
+/* 
+ * Apply the computed scrollbar values to the result. That is 
+ * set the offsets.
+ */
 struct nhgui_result
 nhgui_object_scroll_bar_scroll_result(
 		const struct nhgui_object_scroll_bar *bar,
 		const struct nhgui_result result
 );
 
+/* 
+ * The scroll attribute describes the scrollbar with and height for y direction 
+ * and the same btu rotated is used for x direction.
+ *
+ * size attribute describes the width and height of the window the scrollbar is 
+ * applied to.
+ *
+ * scroll result describes the location of the window top left corner and 
+ * result is the last result from an object.
+ */
 void
 nhgui_object_scroll_bar(
 		struct nhgui_object_scroll_bar *bar,
@@ -352,6 +416,12 @@ nhgui_object_scroll_bar(
 		const struct nhgui_result result	
 );
 
+/* 
+ * Attribute describes the window height and width 
+ *
+ * Is using glscissor such that it is only possiible to render to the 
+ * pixels within the window.
+ */
 struct nhgui_result
 nhgui_window_begin(
 		struct nhgui_window *window,
@@ -361,6 +431,9 @@ nhgui_window_begin(
 		const struct nhgui_result result
 );
 
+/*
+ * End of window 
+ */
 struct nhgui_result 
 nhgui_window_end(
 		struct nhgui_window *window,
@@ -370,6 +443,10 @@ nhgui_window_end(
 		const struct nhgui_result result
 );
 
+/*
+ * attribute height sets font height and width sets the width 
+ * of the list object. 
+ */
 struct nhgui_result
 nhgui_object_text_list(
 		struct nhgui_object_text_list *list,
@@ -384,6 +461,9 @@ nhgui_object_text_list(
 
 );
 
+/*
+ * attribute sets the width and height of the input field.
+ */
 struct nhgui_result 
 nhgui_object_input_field(
 		struct nhgui_object_input_field *field,
@@ -397,6 +477,9 @@ nhgui_object_input_field(
 		const uint32_t input_buffer_size
 );
 
+/* 
+ * Draw quad with as described by attribute 
+ */
 struct nhgui_result 
 nhgui_icon_blank_no_object(
 		const struct nhgui_context *context, 
@@ -405,6 +488,9 @@ nhgui_icon_blank_no_object(
 		const struct nhgui_result result
 );
 
+/* 
+ * Draw quad but support input 
+ */
 struct nhgui_result 
 nhgui_icon_blank(
 		struct nhgui_icon_blank *blank,
@@ -414,6 +500,10 @@ nhgui_icon_blank(
 		const struct nhgui_result result
 );
 
+/* 
+ * Blinking text cursor. Attribute height sets both
+ * width and height 
+ */
 struct nhgui_result 
 nhgui_icon_text_cursor(
 		const struct nhgui_context *context, 
@@ -422,7 +512,10 @@ nhgui_icon_text_cursor(
 		const struct nhgui_result result
 );
 
-
+/* 
+ * Draw a menu icon. Attribute height sets both width and 
+ * height.
+ */
 struct nhgui_result
 nhgui_icon_menu(
 		struct nhgui_icon_menu *object,
@@ -432,13 +525,18 @@ nhgui_icon_menu(
 		const struct nhgui_result result
 );
 
-
+/* 
+ * Initialize freetype library used for generating bitmaps from font files 
+ */
 int 
 nhgui_object_font_freetype_initialize(struct nhgui_object_font_freetype *freetype);
 
 void 
 nhgui_object_font_freetype_deinitialize(struct nhgui_object_font_freetype *freetype);
 
+/* 
+ * Load ANSI characters from filename into font with height described in attribute.
+ */
 int 
 nhgui_object_font_freetype_characters_initialize(
 		struct nhgui_object_font_freetype *freetype,
@@ -452,6 +550,13 @@ void
 nhgui_object_font_freetype_characters_deinitialize(
 	       	struct nhgui_object_font *font
 );
+
+/* 
+ * Used for determening result such that text can be centered 
+ * around x of previous resut where x inc have not been called. 
+ *
+ * Attribute should be the same as the font is rendered with.
+ * */
 struct nhgui_result
 nhgui_object_font_text_result_centered_by_previous_x(
 		const struct nhgui_result result,
@@ -462,7 +567,11 @@ nhgui_object_font_text_result_centered_by_previous_x(
 		const uint32_t text_length
 );
 
-
+/* 
+ * Calucalte number of characters of the text overflows 
+ * where within.x_mm is the starting point and 
+ * within.x_inc_next is the ending point. 
+ */
 uint32_t 
 nhgui_object_font_text_overflow_count(
 		const struct nhgui_result within, 
@@ -473,6 +582,9 @@ nhgui_object_font_text_overflow_count(
 		const uint32_t text_length
 );
 
+/* 
+ * Calculate the max delta in y direction between the characters 
+ */
 float 
 nhgui_object_font_text_delta_y_max(
 		const struct nhgui_context *context, 
@@ -482,6 +594,9 @@ nhgui_object_font_text_delta_y_max(
 		const uint32_t text_length 
 );
 
+/* 
+ * Draw text with height described in attribute 
+ */
 struct nhgui_result
 nhgui_object_font_text(
 		const struct nhgui_context *context, 
@@ -492,6 +607,10 @@ nhgui_object_font_text(
 		const struct nhgui_input *input, 
 		const struct nhgui_result result
 );
+
+/* 
+ * Draw text area with width described in attribute.
+ */
 
 struct nhgui_result 
 nhgui_object_font_text_area(
@@ -505,7 +624,9 @@ nhgui_object_font_text_area(
 		const uint32_t input_buffer_size
 );
 
-
+/* 
+ * Attribute height describes both height and width 
+ */
 
 struct nhgui_result
 nhgui_object_radio_button(
