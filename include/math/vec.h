@@ -1,8 +1,8 @@
-#ifndef VEC_H
-#define VEC_H
+#ifndef NHGUI_VEC_H
+#define NHGUI_VEC_H
 
 
-struct vec3
+struct nhgui_vec3
 {
 	float x;
 	float y;
@@ -12,4 +12,4 @@ struct vec3
 
 
 
-#endif //VEC3_H
+#endif //NHGUI_VEC3_H

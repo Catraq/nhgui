@@ -2,19 +2,6 @@ cmake_minimum_required(VERSION 3.0.2)
 project(nhgui)
 
 
-find_package(GLEW REQUIRED)
-include_directories(${GLEW_INCLUDE_DIRS})
-
-set(OpenGL_GL_PREFERENCE GLVND)
-find_package(OpenGL REQUIRED)
-include_directories(${OpenGL_INCLUDE_DIR})
-
-find_package(glfw3 3.0 REQUIRED)
-
-find_package(Freetype REQUIRED)
-include_directories(${FREETYPE_INCLUDE_DIRS})
-
-
 
 include_directories("${PROJECT_SOURCE_DIR}/src/")
 include_directories("${PROJECT_SOURCE_DIR}/include/")
@@ -27,6 +14,31 @@ set(SOURCES
 
 add_library(nhgui SHARED ${SOURCES})
 
+#Dependencies library 
+target_link_libraries(nhgui m)
+target_link_libraries(nhgui ${GLEW_LIBRARIES})
+target_link_libraries(nhgui glfw)
+target_link_libraries(nhgui ${OPENGL_LIBRARIES})
+target_link_libraries(nhgui ${FREETYPE_LIBRARIES})
+
+target_include_directories(nhgui PUBLIC "include/")
+
+
+find_package(GLEW REQUIRED)
+target_include_directories(nhgui PUBLIC ${GLEW_INCLUDE_DIRS})
+
+set(OpenGL_GL_PREFERENCE GLVND)
+find_package(OpenGL REQUIRED)
+target_include_directories(nhgui PUBLIC ${OpenGL_INCLUDE_DIR})
+
+find_package(glfw3 3.0 REQUIRED)
+
+find_package(Freetype REQUIRED)
+target_include_directories(nhgui PUBLIC ${FREETYPE_INCLUDE_DIRS})
+
+
+
 add_subdirectory(example/simple)
 add_subdirectory(example/list)
+
 

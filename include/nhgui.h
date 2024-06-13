@@ -239,7 +239,7 @@ struct nhgui_object_input_field
 	uint32_t cursor_index;
 
 	/* background color of the field */
-	struct vec3 field_color;
+	struct nhgui_vec3 field_color;
 	
 	/* Used for input */	
 	struct nhgui_icon_blank blank_object;	
@@ -250,12 +250,12 @@ struct nhgui_object_text_list
 {
 	
 	/* Color of text and background of none selected */
-	struct vec3 text_color;
-	struct vec3 field_color;
+	struct nhgui_vec3 text_color;
+	struct nhgui_vec3 field_color;
 
 	/* Color of text and background of selected */
-	struct vec3 selected_field_color;
-	struct vec3 selected_text_color;
+	struct nhgui_vec3 selected_field_color;
+	struct nhgui_vec3 selected_text_color;
 	
 	/* > 0, then scroll the text if it overflows */
 	float char_scroll_per_sec;
@@ -328,9 +328,9 @@ struct nhgui_window
 
 struct nhgui_object_font_text_area 
 {
-	struct vec3 background_color;	
+	struct nhgui_vec3 background_color;	
 
-	struct vec3 font_color;
+	struct nhgui_vec3 font_color;
 };
 
 
