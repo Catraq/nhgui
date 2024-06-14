@@ -14,16 +14,6 @@ set(SOURCES
 
 add_library(nhgui SHARED ${SOURCES})
 
-#Dependencies library 
-target_link_libraries(nhgui m)
-target_link_libraries(nhgui ${GLEW_LIBRARIES})
-target_link_libraries(nhgui glfw)
-target_link_libraries(nhgui ${OPENGL_LIBRARIES})
-target_link_libraries(nhgui ${FREETYPE_LIBRARIES})
-
-target_include_directories(nhgui PUBLIC "include/")
-
-
 find_package(GLEW REQUIRED)
 target_include_directories(nhgui PUBLIC ${GLEW_INCLUDE_DIRS})
 
@@ -36,9 +26,18 @@ find_package(glfw3 3.0 REQUIRED)
 find_package(Freetype REQUIRED)
 target_include_directories(nhgui PUBLIC ${FREETYPE_INCLUDE_DIRS})
 
+#Dependencies library 
+target_link_libraries(nhgui PUBLIC m)
+target_link_libraries(nhgui PUBLIC ${GLEW_LIBRARIES})
+target_link_libraries(nhgui PUBLIC glfw)
+target_link_libraries(nhgui PUBLIC ${OPENGL_LIBRARIES})
+target_link_libraries(nhgui PUBLIC ${FREETYPE_LIBRARIES})
+
+target_include_directories(nhgui PUBLIC "include/")
 
 
-add_subdirectory(example/simple)
+
+
 add_subdirectory(example/list)
 
 
