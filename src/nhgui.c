@@ -111,8 +111,6 @@ nhgui_common_uniform_locations_find(struct nhgui_common_uniform_locations *locat
 	if(position_location == -1)
 	{
 		fprintf(stderr, "Could not find uniform location %s. \n", position_uniform_str);
-		
-		return -1;	
 	}
 
 	const char *size_uniform_str = "size";
@@ -120,8 +118,6 @@ nhgui_common_uniform_locations_find(struct nhgui_common_uniform_locations *locat
 	if(size_location == -1)
 	{
 		fprintf(stderr, "Could not find uniform location %s. \n", size_uniform_str);
-		
-		return -1;	
 	}
 
 	const char *dimension_uniform_str = "dimension";
@@ -129,8 +125,6 @@ nhgui_common_uniform_locations_find(struct nhgui_common_uniform_locations *locat
 	if(dimension_location == -1)
 	{
 		fprintf(stderr, "Could not find uniform location %s. \n", dimension_uniform_str);
-		
-		return -1;	
 	}
 
 
@@ -139,14 +133,13 @@ nhgui_common_uniform_locations_find(struct nhgui_common_uniform_locations *locat
 	if(color_location == -1)
 	{
 		fprintf(stderr, "Could not find uniform location %s. \n", color_uniform_str);
-		
-		return -1;	
 	}
 
 
 	locations->position = position_location;
 	locations->size = size_location;
 	locations->dimension = dimension_location;
+	locations->color = color_location;
 
 	return 0;
 
@@ -176,10 +169,26 @@ nhgui_common_uniform_locations_set(
 	p_y = 2.0*p_y-1.0;
 	p_x = 2.0*p_x-1.0;
 	
-	glUniform2f(locations->position, p_x, p_y);
-	glUniform2f(locations->size, s_x, s_y);
-	glUniform3f(locations->color, r, g, b);
-	glUniform2ui(locations->dimension, input->width_pixel, input->height_pixel);
+	if(locations->size != -1){	
+		glUniform2f(locations->position, p_x, p_y);
+		CHECK_GL_ERROR();
+	}
+	
+	if(locations->size != -1){
+		glUniform2f(locations->size, s_x, s_y);
+		CHECK_GL_ERROR();
+	}
+	
+	if(locations->color != -1){
+		glUniform3f(locations->color, r, g, b);
+		CHECK_GL_ERROR();
+	}
+	
+	if(locations->dimension !=  -1){
+		glUniform2ui(locations->dimension, input->width_pixel, input->height_pixel);
+		CHECK_GL_ERROR();
+		printf("%i \n", locations->dimension);
+	}
 
 }
 
@@ -452,6 +461,7 @@ nhgui_icon_blank_no_object(
 	result_tmp.y_mm -= attribute->height_mm;
 
 	glUseProgram(instance->program);	
+	CHECK_GL_ERROR();
 
 	nhgui_common_uniform_locations_set(
 			&instance->locations,
@@ -461,8 +471,12 @@ nhgui_icon_blank_no_object(
 		       	attribute->width_mm, attribute->height_mm,
 			attribute->r, attribute->g, attribute->b
 	);
+	CHECK_GL_ERROR();
 
 	nhgui_surface_render(&context->surface);
+	CHECK_GL_ERROR();
+
+
 	
 	struct nhgui_result r = result;
 	r.y_inc_next = attribute->height_mm;
@@ -578,41 +592,17 @@ nhgui_icon_blank_initialize(struct nhgui_icon_blank_instance *instance)
 	{
 		fprintf(stderr, "nhgui_shader_vertex_create_from_file() failed. \n");
 		return -1;	
+	
 	}
 
-	const char *position_uniform_str = "position";
-	GLint position_location = glGetUniformLocation(instance->program, position_uniform_str);
-	if(position_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", position_uniform_str);
-			
+	int result = nhgui_common_uniform_locations_find(&instance->locations, instance->program);
+	if(result < 0){
 		glDeleteProgram(instance->program);
-		return -1;	
+
+		fprintf(stderr, "nhgui_common_uniform_locations_find() failed. \n");
+		return -1;
 	}
 
-	const char *size_uniform_str = "size";
-	GLint size_location = glGetUniformLocation(instance->program, size_uniform_str);
-	if(size_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", size_uniform_str);
-		
-		glDeleteProgram(instance->program);
-		return -1;	
-	}
-
-	const char *color_uniform_str = "color";
-	GLint color_location = glGetUniformLocation(instance->program, color_uniform_str);
-	if(color_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", color_uniform_str);
-		
-		glDeleteProgram(instance->program);
-		return -1;	
-	}
-
-	instance->locations.color = color_location;
-	instance->locations.position = position_location;
-	instance->locations.size = size_location;
 
 	return 0;
 }
@@ -1186,6 +1176,8 @@ nhgui_object_text_list(
 					input,
 					r	
 			);
+
+
 			uint32_t overflow_count_index = 0;
 			uint32_t overflow_count = nhgui_object_font_text_overflow_count(
 				r,	
@@ -1206,7 +1198,7 @@ nhgui_object_text_list(
 			font_attribute.r = list->text_color.x;
 			font_attribute.g = list->text_color.y;
 			font_attribute.b = list->text_color.z;
-			
+
 			nhgui_object_font_text(
 					context, 
 					font, 
@@ -1216,6 +1208,7 @@ nhgui_object_text_list(
 					input, 
 					r	
 			);
+
 
 		}
 
@@ -1591,43 +1584,18 @@ nhgui_object_font_text_initialize(struct nhgui_object_font_text_instance *instan
 		fprintf(stderr, "nhgui_shader_vertex_create_from_file() failed. \n");
 		return -1;	
 	}
+	
+	int result = nhgui_common_uniform_locations_find(
+			&instance->locations, 
+			instance->program
+	);
 
-			
-	const char *position_uniform_str = "position";
-	GLint position_location = glGetUniformLocation(instance->program, position_uniform_str);
-	if(position_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", position_uniform_str);
+	if(result < 0){
 		glDeleteProgram(instance->program);
-		return -1;	
-	}
-
-	const char *size_uniform_str = "size";
-	GLint size_location = glGetUniformLocation(instance->program, size_uniform_str);
-	if(size_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", size_uniform_str);
 		
-		glDeleteProgram(instance->program);
-		return -1;	
+		fprintf(stderr, "nhgui_common_uniform_locations_find() failed. \n");
+		return -1;
 	}
-
-	const char *color_uniform_str = "color";
-	GLint color_location = glGetUniformLocation(instance->program, color_uniform_str);
-	if(color_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", color_uniform_str);
-		
-		glDeleteProgram(instance->program);
-		return -1;	
-	}
-
-
-	instance->locations.color = color_location;
-	instance->locations.position = position_location;
-	instance->locations.size = size_location;
-
-
 
 	return 0;
 }

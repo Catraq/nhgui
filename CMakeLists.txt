@@ -10,6 +10,7 @@ set(SOURCES
 	"${PROJECT_SOURCE_DIR}/src/misc/file.c"
 	"${PROJECT_SOURCE_DIR}/src/nhgui.c"
 	"${PROJECT_SOURCE_DIR}/src/nhgui_glfw.c"
+	"${PROJECT_SOURCE_DIR}/src/nhgui_error.c"
 )
 
 add_library(nhgui SHARED ${SOURCES})

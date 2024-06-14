@@ -12,6 +12,8 @@
 
 #include "misc/file.h"
 
+#include "nhgui_error.h"
+
 #include "math/vec.h"
 
 #define NHGUI_INPUT_MAX 32
