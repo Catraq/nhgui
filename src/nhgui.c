@@ -751,42 +751,18 @@ nhgui_icon_text_cursor_initialize(struct nhgui_icon_text_cursor_instance *instan
 		fprintf(stderr, "nhgui_shader_vertex_create_from_file() failed. \n");
 		return -1;	
 	}
+	
+	int result = nhgui_common_uniform_locations_find(
+			&instance->locations, 
+			instance->program
+	);
 
-	const char *position_uniform_str = "position";
-	GLint position_location = glGetUniformLocation(instance->program, position_uniform_str);
-	if(position_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", position_uniform_str);
-			
+	if(result < 0){
 		glDeleteProgram(instance->program);
-		return -1;	
+
+		fprintf(stderr, "nhgui_common_uniform_locations_find() failed. \n");
+		return -1;
 	}
-
-	const char *size_uniform_str = "size";
-	GLint size_location = glGetUniformLocation(instance->program, size_uniform_str);
-	if(size_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", size_uniform_str);
-		
-		glDeleteProgram(instance->program);
-		return -1;	
-	}
-
-	const char *color_uniform_str = "color";
-	GLint color_location = glGetUniformLocation(instance->program, color_uniform_str);
-	if(color_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", color_uniform_str);
-		
-		glDeleteProgram(instance->program);
-		return -1;	
-	}
-
-	instance->locations.color= color_location;
-	instance->locations.position = position_location;
-	instance->locations.size = size_location;
-
-
 
 	return 0;
 }
@@ -1070,14 +1046,7 @@ nhgui_object_text_list(
 	float cursor_x_mm = (float)input->width_pixel / (float)context->screen_resolution_x * (float)context->screen_width_mm/(float)input->width_pixel * (float)input->cursor_x_pixel;
 	float cursor_y_mm = (float)input->height_pixel / (float)context->screen_resolution_y * (float)context->screen_height_mm/(float)input->height_pixel * (float)input->cursor_y_pixel;
 
-	if(list->selected_prev > 0)
-	{
-		list->selected_prev = 0;
-	}
-	else if(input->selected_new > 0)
-	{
-		list->selected = 0;	
-	}	
+
 	struct nhgui_result r = result;	
 	for(uint32_t i = 0; i < entry_count; i++)
 	{
@@ -1095,7 +1064,6 @@ nhgui_object_text_list(
 				else
 					list->selected = 1;
 
-				list->selected_prev = list->selected;
 
 				list->selected_index = i;
 
@@ -1464,6 +1432,45 @@ nhgui_object_input_field(
 	return background_result;
 
 }
+
+
+
+struct nhgui_result 
+nhgui_object_input_field_float(
+		struct nhgui_object_input_field *field,
+		const struct nhgui_context *context,
+		const struct nhgui_object_font *font,
+		const struct nhgui_render_attribute *attribute,
+		struct nhgui_input *input, 
+		const struct nhgui_result result,
+		float *value
+		
+)
+{
+	float v = *value;
+
+	const uint32_t input_buffer_size = 32;
+	char input_buffer[input_buffer_size];
+	uint32_t input_buffer_length = snprintf(input_buffer, input_buffer_size, "%f", v);
+		
+	struct nhgui_result bg = nhgui_object_input_field(
+		field,
+		context,
+		font,
+		attribute,
+		input, 
+		result,
+		input_buffer, 
+		&input_buffer_length,
+		input_buffer_size
+	);
+
+	*value = strtof(input_buffer, NULL);
+
+	return bg;
+
+}
+
 int 
 nhgui_object_font_freetype_initialize(struct nhgui_object_font_freetype *freetype)
 {

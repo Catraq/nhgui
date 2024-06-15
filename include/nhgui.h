@@ -479,6 +479,21 @@ nhgui_object_input_field(
 		const uint32_t input_buffer_size
 );
 
+/*
+ * attribute sets the width and height of the input field.
+ */
+struct nhgui_result 
+nhgui_object_input_field_float(
+		struct nhgui_object_input_field *field,
+		const struct nhgui_context *context,
+		const struct nhgui_object_font *font,
+		const struct nhgui_render_attribute *attribute,
+		struct nhgui_input *input, 
+		const struct nhgui_result result,
+		float *value
+);
+
+
 /* 
  * Draw quad with as described by attribute 
  */
