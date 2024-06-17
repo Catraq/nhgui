@@ -5,12 +5,13 @@
 #define S2(x) S1(x)
 #define LOCATION __FILE__ ":" S2(__LINE__) ":"
 
-#define CHECK_GL_ERROR() nhgui_gl_error(LOCATION)
 
 #include <stdio.h>
 
 #include "platform.h"
 
-void glError(const char *msg);
+void nhgui_gl_error(const char *msg);
+
+#define CHECK_GL_ERROR() nhgui_gl_error(LOCATION)
 
 #endif 
