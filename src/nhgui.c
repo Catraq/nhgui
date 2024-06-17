@@ -1225,75 +1225,21 @@ nhgui_object_input_field(
 			input,
 			result
 	);
-	
-	/* In case a new buffer is provided and the previous buffer */
-	if(field->cursor_index > *input_buffer_length)
-	{
-		field->cursor_index = *input_buffer_length;
-	}
-	
+
 	/* If the blank object, that is the background of 
 	 * the input field is selected. Then process input 
 	 * from the keyboard */	
 	if(field->blank_object.selected > 0)
 	{
-		/* If backspace, then remove characters */
-		if(input->key_backspace_state  > 0)
-		{
-			/* Only remove if there are something in the buffer */
-			if(*input_buffer_length > 0)
-			{
-				/* Remove last character */
-				if(field->cursor_index == *input_buffer_length)
-				{
-					*input_buffer_length -= 1;
-					field->cursor_index -= 1;	
-				}
-				/* Cant remove if cursor is at first character */
-				else if(field->cursor_index > 0)
-				{
+		int32_t delta_characters = nhgui_input_buffer(
+				input_buffer, 
+				input_buffer_length,
+				input_buffer_size, 
+				input, 
+				&field->cursor_index	
+		);
 
-					/* Remove at cursor index */
-					uint32_t count  = *input_buffer_length - field->cursor_index;
-					memcpy(&input_buffer[field->cursor_index-1], &input_buffer[field->cursor_index], count);	
-
-					*input_buffer_length -= 1;
-					field->cursor_index -= 1;	
-				}
-			}
-		}
-		/* If not backspace and there are input in the buffer */
-		else if(input->input_length > 0)
-		{
-			/* Simply add to the last character the last character */
-			if(field->cursor_index == *input_buffer_length)
-			{
-				uint32_t space = input_buffer_size - *input_buffer_length; 
-				uint32_t count = space < input->input_length ? space : input->input_length;
-				memcpy(&input_buffer[*input_buffer_length], input->input, count);
-
-				*input_buffer_length += count;
-				field->cursor_index += count;
-			}
-			/* Make sure that there are space in the input buffer */
-			else if(*input_buffer_length + input->input_length -1 < input_buffer_size)
-			{
-				/* Index to move everything to */
-				uint32_t new_index = field->cursor_index + input->input_length;
-				/* Number of bytes to be moved */
-				uint32_t copy_length = *input_buffer_length - new_index;	
-
-				/* Copy chracter at cursor forward such that there is space for new chracter at the 
-				 * position */
-				memcpy(&input_buffer[new_index], &input_buffer[field->cursor_index], copy_length); 
-
-				/* Then copy new character into the free position */
-				memcpy(&input_buffer[field->cursor_index], input->input, input->input_length); 
-			
-				*input_buffer_length += input->input_length;
-				field->cursor_index += input->input_length;;
-			}
-		}	
+		(void)delta_characters; 
 	}
 
 
@@ -1437,7 +1383,7 @@ nhgui_object_input_field(
 
 struct nhgui_result 
 nhgui_object_input_field_float(
-		struct nhgui_object_input_field *field,
+		struct nhgui_object_input_field_float *float_field,
 		const struct nhgui_context *context,
 		const struct nhgui_object_font *font,
 		const struct nhgui_render_attribute *attribute,
@@ -1447,27 +1393,227 @@ nhgui_object_input_field_float(
 		
 )
 {
-	float v = *value;
 
-	const uint32_t input_buffer_size = 32;
-	char input_buffer[input_buffer_size];
-	uint32_t input_buffer_length = snprintf(input_buffer, input_buffer_size, "%f", v);
-		
-	struct nhgui_result bg = nhgui_object_input_field(
-		field,
-		context,
-		font,
-		attribute,
-		input, 
-		result,
-		input_buffer, 
-		&input_buffer_length,
-		input_buffer_size
+	struct nhgui_object_input_field *field = &float_field->field;
+
+	char *input_buffer = float_field->str;
+	uint32_t *input_buffer_length = &float_field->str_length;
+	uint32_t input_buffer_size = sizeof(float_field->str);
+
+	struct nhgui_render_attribute blank_attribute = 
+	{
+		.width_mm = attribute->width_mm,
+		.height_mm = attribute->height_mm,	
+		.r = field->field_color.x,
+		.g = field->field_color.y,
+		.b = field->field_color.z,
+	};
+
+	/* Background of the input field.
+	 * Used for input too.  */
+	struct nhgui_result background_result = nhgui_icon_blank(
+			&field->blank_object,
+			context,
+			&blank_attribute,
+			input,
+			result
 	);
+		
+	/* If the blank object, that is the background of 
+	 * the input field is selected. Then process input 
+	 * from the keyboard */	
+	if(field->blank_object.selected > 0)
+	{
+		int32_t delta_characters = nhgui_input_buffer(
+				input_buffer, 
+				input_buffer_length,
+				input_buffer_size, 
+				input, 
+				&field->cursor_index	
+		);
 
-	*value = strtof(input_buffer, NULL);
+		(void)delta_characters; 
+	}
 
-	return bg;
+	const char single = '.';
+	const char allowed[] = "1234567890.";
+			
+	uint32_t single_found = 0;
+	for(uint32_t i = 0; i < input_buffer_size; i++){
+		if(single == float_field->str[i] && single_found > 0)
+		{
+			uint32_t count = sizeof(float_field->str) - i - 1;
+			memcpy(&float_field->str[i], &float_field->str[i+1], count);	
+
+			*input_buffer_length -= 1;
+			field->cursor_index -= 1;
+		}		
+		else if(single == float_field->str[i])
+		{
+			single_found = 1;	
+		}
+	}
+
+	for(uint32_t i = 0; i < sizeof(float_field->str); i++)
+	{
+		uint32_t allowed_found = 0;
+		for(uint32_t j = 0; j < sizeof(allowed); j++)
+		{
+			if(float_field->str[i] == allowed[j]){
+				allowed_found = 1;
+				break;
+			}	
+		}
+
+		if(allowed_found == 0)
+		{
+			uint32_t count = sizeof(float_field->str) - i - 1;
+			memcpy(&float_field->str[i], &float_field->str[i+1], count);	
+
+			*input_buffer_length -= 1;
+			field->cursor_index -= 1;
+		}
+		
+	}	
+
+	*value = atof(float_field->str);
+
+
+
+	/* Find number of characters that is past result, 
+	 * that is all characters that is outside of the 
+	 * blank that is used as background. 
+	 */
+	
+	float x_mm = 0.0f;
+	float x_mm_max = background_result.x_mm + background_result.x_inc_next;
+	uint32_t overflow_count = 0;
+	for(uint32_t i = 0; i < *input_buffer_length; i++)
+	{
+		unsigned char c = input_buffer[i];
+		float ratio = attribute->height_mm/font->height_mm;
+		float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
+		
+		float cursor_mm = attribute->height_mm;
+		float new_x_mm = x_mm + (float)(font->character[c].advance_x >> 6) * mm_per_pixel_x + cursor_mm;
+		/* See if it is past the boudning box */
+		if(background_result.x_mm + new_x_mm > x_mm_max)
+		{
+			overflow_count = *input_buffer_length - i;		
+			break;
+		}
+		x_mm += (font->character[c].advance_x >> 6) * mm_per_pixel_x;
+	}
+
+	
+	/* If the blank was clicked then compute the index of the selcted character, 
+	 * if no index is found. Then it is safe to assume that area clicked was 
+	 * past the text and cursor index is set as the last character */
+	struct nhgui_result cursor_result = background_result ;
+	if(field->blank_object.clicked > 0)
+	{
+		float cursor_x_mm = (float)input->width_pixel / (float)context->screen_resolution_x * (float)context->screen_width_mm/(float)input->width_pixel * (float)input->cursor_x_pixel;
+		float cursor_y_mm = (float)input->height_pixel / (float)context->screen_resolution_y * (float)context->screen_height_mm/(float)input->height_pixel * (float)input->cursor_y_pixel;
+		
+		uint32_t index_found = 0;
+		for(uint32_t i = overflow_count; i < *input_buffer_length; i++)
+		{
+			unsigned char c = input_buffer[i];
+			float ratio = attribute->height_mm/font->height_mm;
+			float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
+			float x_mm_inc = (font->character[c].advance_x >> 6) * mm_per_pixel_x;
+			if(cursor_x_mm > cursor_result.x_mm && cursor_x_mm < cursor_result.x_mm + x_mm_inc
+			&& cursor_y_mm > cursor_result.y_mm - attribute->height_mm && cursor_y_mm < cursor_result.y_mm)
+			{
+				field->cursor_index = i;
+				index_found = 1;
+				break;	
+			}
+	
+			cursor_result.x_mm += x_mm_inc;
+		}
+
+		if(index_found == 0)	
+		{
+			field->cursor_index = *input_buffer_length;		
+		}
+	}
+	else
+	{
+		for(uint32_t i = overflow_count; i < field->cursor_index; i++)
+		{
+			unsigned char c = input_buffer[i];
+			float ratio = attribute->height_mm/font->height_mm;
+			float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
+			float x_mm_inc = (font->character[c].advance_x >> 6) * mm_per_pixel_x;
+			cursor_result.x_mm += x_mm_inc;
+		}
+	
+	}
+
+	/* Find where the cursor should be placed */
+	struct nhgui_render_attribute cursor_attribute = 
+	{
+		.width_mm = attribute->height_mm,
+		.height_mm = attribute->height_mm,
+		.r = 1.0f,	
+		.g = 1.0f, 
+		.b = 1.0f
+	};
+
+	if(field->cursor_index < *input_buffer_length)
+	{
+		/* Cursor is before last character. Make it the 
+		 * same size as the character it is hovering. */
+
+		/* Find width of character at cursor index. */
+		unsigned char c = input_buffer[field->cursor_index];
+		float ratio = attribute->height_mm/font->height_mm;
+		float mm_per_pixel_x = ratio * (float)context->screen_width_mm/(float)context->screen_resolution_x;
+		float cursor_width_mm = font->character[c].width * mm_per_pixel_x;
+		
+		cursor_attribute.width_mm = cursor_width_mm;
+
+	}
+	else
+	{
+		/* Cursor is past last character */	
+	
+	}
+		
+		
+	if(field->blank_object.selected > 0)
+	{	
+		/* This is cursor placed behind the text */
+		nhgui_icon_text_cursor(
+				context,
+				&cursor_attribute,
+				input,
+				cursor_result	
+		);
+	}
+
+	struct nhgui_render_attribute font_attribute = 
+	{
+		.height_mm = attribute->height_mm,
+		.r = 1.0f,	
+		.g = 1.0f, 
+		.b = 1.0f
+	};
+
+
+	nhgui_object_font_text(
+			context, 
+			font, 
+			&input_buffer[overflow_count],
+			*input_buffer_length - overflow_count,
+			&font_attribute,
+			input, 
+			result
+	);
+	
+	return background_result;
+
 
 }
 
@@ -1990,6 +2136,88 @@ int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instan
 void nhgui_object_radio_button_deinitialize(struct nhgui_object_radio_button_instance *instance)
 {
 	glDeleteProgram(instance->shader_program);
+}
+
+int32_t 
+nhgui_input_buffer(
+	char *input_buffer, 
+	uint32_t *input_buffer_length,
+	uint32_t input_buffer_size, 
+	struct nhgui_input *input, 
+	uint32_t *input_index
+)
+{
+	int32_t delta = 0;
+
+	/* In case a new buffer is provided and the previous buffer */
+	if(*input_index > *input_buffer_length)
+	{
+		*input_index = *input_buffer_length;
+	}
+
+	/* If backspace, then remove characters */
+	/* Only remove if there are something in the buffer */
+	if(input->key_backspace_state  > 0 && *input_buffer_length > 0)
+	{
+		/* Remove last character */
+		if(*input_index == *input_buffer_length)
+		{
+			*input_buffer_length -= 1;
+			*input_index -= 1;	
+
+			delta = -1;
+		}
+		/* Cant remove if cursor is at first character */
+		else if(*input_index > 0)
+		{
+
+			/* Remove at cursor index */
+			uint32_t count  = *input_buffer_length - *input_index;
+			memcpy(&input_buffer[*input_index-1], &input_buffer[*input_index], count);	
+
+			*input_buffer_length -= 1;
+			*input_index -= 1;	
+			delta = -1;
+		}
+	}
+	/* If not backspace and there are input in the buffer */
+	else if(input->input_length > 0)
+	{
+		/* Simply add to the last character the last character */
+		if(*input_index == *input_buffer_length)
+		{
+			uint32_t space = input_buffer_size - *input_buffer_length; 
+			uint32_t count = space < input->input_length ? space : input->input_length;
+			memcpy(&input_buffer[*input_buffer_length], input->input, count);
+
+			*input_buffer_length += count;
+			*input_index += count;
+
+			delta = count;
+
+		}
+		/* Make sure that there are space in the input buffer */
+		else if(*input_buffer_length + input->input_length -1 < input_buffer_size)
+		{
+			/* Index to move everything to */
+			uint32_t new_index = *input_index + input->input_length;
+			/* Number of bytes to be moved */
+			uint32_t copy_length = *input_buffer_length - new_index;	
+
+			/* Copy chracter at cursor forward such that there is space for new chracter at the 
+			 * position */
+			memcpy(&input_buffer[new_index], &input_buffer[*input_index], copy_length); 
+
+			/* Then copy new character into the free position */
+			memcpy(&input_buffer[*input_index], input->input, input->input_length); 
+		
+			*input_buffer_length += input->input_length;
+			*input_index += input->input_length;;
+
+			delta = input->input_length;
+		}
+	}	
+	return delta;
 }
 
 

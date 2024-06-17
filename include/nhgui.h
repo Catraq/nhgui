@@ -247,6 +247,19 @@ struct nhgui_object_input_field
 	struct nhgui_icon_blank blank_object;	
 };
 
+struct nhgui_object_input_field_float 
+{
+	/* Float number represented as string */
+	char str[32];
+	
+	/* Length of str number */
+	uint32_t str_length;
+
+	struct nhgui_object_input_field field;
+	
+};
+
+
 
 struct nhgui_object_text_list
 {
@@ -464,7 +477,8 @@ nhgui_object_text_list(
 );
 
 /*
- * attribute sets the width and height of the input field.
+ * attribute sets the width of the  input field and height 
+ * sets the font height. 
  */
 struct nhgui_result 
 nhgui_object_input_field(
@@ -480,11 +494,12 @@ nhgui_object_input_field(
 );
 
 /*
- * attribute sets the width and height of the input field.
+ * attribute sets the width of the  input field and height 
+ * sets the font height. 
  */
 struct nhgui_result 
 nhgui_object_input_field_float(
-		struct nhgui_object_input_field *field,
+		struct nhgui_object_input_field_float *float_field,
 		const struct nhgui_context *context,
 		const struct nhgui_object_font *font,
 		const struct nhgui_render_attribute *attribute,
@@ -655,6 +670,15 @@ nhgui_object_radio_button(
 );
 
 /* Internal functions */
+
+int32_t 
+nhgui_input_buffer(
+	char *input_buffer, 
+	uint32_t *input_buffer_length,
+	uint32_t input_buffer_size, 
+	struct nhgui_input *input, 
+	uint32_t *input_index
+);
 
 int 
 nhgui_icon_blank_initialize(struct nhgui_icon_blank_instance *instance);
