@@ -1,5 +1,5 @@
-#ifndef LIGHT_ERROR_H
-#define LIGHT_ERROR_H 
+#ifndef NHGUI_ERROR_H
+#define NHGUI_ERROR_H 
 
 #define S1(x) #x
 #define S2(x) S1(x)

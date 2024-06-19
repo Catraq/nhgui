@@ -1400,6 +1400,13 @@ nhgui_object_input_field_float(
 	uint32_t *input_buffer_length = &float_field->str_length;
 	uint32_t input_buffer_size = sizeof(float_field->str);
 
+	if(float_field->str_initialized == 0)
+	{
+		float_field->str_length = snprintf(float_field->str, sizeof(float_field->str), "%f", *value);	
+		float_field->str_initialized = 1;
+
+	}
+
 	struct nhgui_render_attribute blank_attribute = 
 	{
 		.width_mm = attribute->width_mm,
@@ -1436,7 +1443,22 @@ nhgui_object_input_field_float(
 	}
 
 	const char single = '.';
-	const char allowed[] = "1234567890.";
+	const char front = '-';
+	const char allowed[] = "1234567890.-";
+
+	for(uint32_t i = 1; i < input_buffer_size; i++)
+	{
+		if(front == float_field->str[i])	
+		{
+			uint32_t count = sizeof(float_field->str) - i - 1;
+			memcpy(&float_field->str[i], &float_field->str[i+1], count);	
+
+			if(*input_buffer_length > 0)
+				*input_buffer_length -= 1;
+			if(field->cursor_index > 0)
+				field->cursor_index -= 1;
+		}
+	}
 			
 	uint32_t single_found = 0;
 	for(uint32_t i = 0; i < input_buffer_size; i++){
@@ -1445,15 +1467,17 @@ nhgui_object_input_field_float(
 			uint32_t count = sizeof(float_field->str) - i - 1;
 			memcpy(&float_field->str[i], &float_field->str[i+1], count);	
 
-			*input_buffer_length -= 1;
-			field->cursor_index -= 1;
+			if(*input_buffer_length > 0)
+				*input_buffer_length -= 1;
+			if(field->cursor_index > 0)
+				field->cursor_index -= 1;
 		}		
 		else if(single == float_field->str[i])
 		{
 			single_found = 1;	
 		}
 	}
-
+	
 	for(uint32_t i = 0; i < sizeof(float_field->str); i++)
 	{
 		uint32_t allowed_found = 0;
@@ -1469,12 +1493,15 @@ nhgui_object_input_field_float(
 		{
 			uint32_t count = sizeof(float_field->str) - i - 1;
 			memcpy(&float_field->str[i], &float_field->str[i+1], count);	
-
-			*input_buffer_length -= 1;
-			field->cursor_index -= 1;
+			
+			if(*input_buffer_length > 0)
+				*input_buffer_length -= 1;
+			if(field->cursor_index > 0)
+				field->cursor_index -= 1;
 		}
 		
 	}	
+
 
 	*value = atof(float_field->str);
 
@@ -1548,7 +1575,6 @@ nhgui_object_input_field_float(
 			float x_mm_inc = (font->character[c].advance_x >> 6) * mm_per_pixel_x;
 			cursor_result.x_mm += x_mm_inc;
 		}
-	
 	}
 
 	/* Find where the cursor should be placed */
@@ -1611,10 +1637,7 @@ nhgui_object_input_field_float(
 			input, 
 			result
 	);
-	
 	return background_result;
-
-
 }
 
 int 

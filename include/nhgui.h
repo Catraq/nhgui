@@ -254,6 +254,11 @@ struct nhgui_object_input_field_float
 	
 	/* Length of str number */
 	uint32_t str_length;
+	
+	/* > 0 if str have been initialized with the float value passed 
+	 * by the function 
+	 */
+	uint32_t str_initialized;
 
 	struct nhgui_object_input_field field;
 	
