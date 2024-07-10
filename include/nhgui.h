@@ -227,11 +227,19 @@ struct nhgui_object_radio_button
 
 struct nhgui_icon_blank
 {
+	/* 0 > If the object is selected */
 	uint8_t selected;
+	
+	/* 0 > If the object went from selected to not selected. */
+	uint8_t deselected;
+	
+	/* 0 > If the object was selected on this iteration */
 	uint8_t selected_prev;
-
+	
+	/* 0 > If the object was clicked */
 	uint8_t clicked;	
-
+	
+	/* 0 > If the object was pressed */
 	uint8_t pressed;
 };
 

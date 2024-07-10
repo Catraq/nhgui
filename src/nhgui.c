@@ -530,6 +530,8 @@ nhgui_icon_blank(
 		blank->pressed = 0;	
 	}
 
+	blank->deselected = 0;
+
 
 	if(blank->selected_prev > 0)
 	{
@@ -537,6 +539,7 @@ nhgui_icon_blank(
 	}
 	else if(input->selected_new > 0)
 	{
+		blank->deselected = 1;
 		blank->selected = 0;	
 	}	
 	else if(input->cursor_button_left > 0)
@@ -1393,19 +1396,7 @@ nhgui_object_input_field_float(
 		
 )
 {
-
 	struct nhgui_object_input_field *field = &float_field->field;
-
-	char *input_buffer = float_field->str;
-	uint32_t *input_buffer_length = &float_field->str_length;
-	uint32_t input_buffer_size = sizeof(float_field->str);
-
-	if(float_field->str_initialized == 0)
-	{
-		float_field->str_length = snprintf(float_field->str, sizeof(float_field->str), "%f", *value);	
-		float_field->str_initialized = 1;
-
-	}
 
 	struct nhgui_render_attribute blank_attribute = 
 	{
@@ -1425,6 +1416,32 @@ nhgui_object_input_field_float(
 			input,
 			result
 	);
+
+
+	char *input_buffer = float_field->str;
+	uint32_t *input_buffer_length = &float_field->str_length;
+	uint32_t input_buffer_size = sizeof(float_field->str);
+	
+	/* Dont update the value if it is selected */
+	if(field->blank_object.selected > 0){}
+	/* If selected previously, then update the float value */	
+	else if(field->blank_object.deselected > 0)
+	{
+		printf("Updated value \n");
+		*value = atof(float_field->str);
+	}
+	else
+	{
+		float_field->str_length = snprintf(float_field->str, sizeof(float_field->str), "%f", *value);	
+	}
+#if 0
+	if(float_field->str_initialized == 0)
+	{
+		float_field->str_length = snprintf(float_field->str, sizeof(float_field->str), "%f", *value);	
+		float_field->str_initialized = 1;
+
+	}
+#endif 
 		
 	/* If the blank object, that is the background of 
 	 * the input field is selected. Then process input 
@@ -1502,8 +1519,17 @@ nhgui_object_input_field_float(
 		
 	}	
 
-
-	*value = atof(float_field->str);
+	/* If the input field is selected, then dont update the value such that
+	 * it can be edited. 
+	 */
+	if(field->blank_object.selected > 0)
+	{
+	
+	}
+	else 
+	{
+		*value = atof(float_field->str);
+	}
 
 
 
