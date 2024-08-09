@@ -2060,7 +2060,7 @@ nhgui_object_radio_button(
 	
 
 
-
+#if 0
 	/* Scale by window relative resolution and calcuate mm per 1.0 unit mul with actual height and width */	
 	float s_x = (float)context->screen_resolution_x/(float)input->width_pixel * 1.0 /(float)context->screen_width_mm * (float)attribute->height_mm;
 	float s_y = (float)context->screen_resolution_y/(float)input->height_pixel * 1.0 /(float)context->screen_height_mm * (float)attribute->height_mm;
@@ -2082,10 +2082,31 @@ nhgui_object_radio_button(
 	glUniform2f(instance->location_position, p_x, p_y);
 	glUniform2f(instance->location_size, s_x, s_y);
 	glUniform2ui(instance->location_dimension, input->width_pixel, input->height_pixel);
+#endif 
+	glUseProgram(instance->shader_program);	
+	
+
+	nhgui_common_uniform_locations_set(
+			&instance->locations,
+		       	context,
+		       	input,
+		       	result,
+		       	attribute->width_mm, attribute->width_mm,
+			attribute->r, attribute->g, attribute->b
+	);
+
 
 	nhgui_surface_render(&context->surface);
 
-	return render_result;
+	struct nhgui_result r = result;
+	r.y_inc_next = attribute->width_mm;
+	r.x_inc_next = attribute->width_mm;
+
+	r.y_min_mm = r.y_min_mm < r.y_mm - r.y_inc_next ? r.y_min_mm : r.y_mm - r.y_inc_next;
+	r.x_max_mm = r.x_max_mm < r.x_mm + r.x_inc_next ? r.x_mm + r.x_inc_next : r.x_max_mm;
+
+
+	return r;
 }
 
 int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instance *instance)
@@ -2127,7 +2148,7 @@ int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instan
 		return -1;	
 	
 	}
-
+#if 0
 	const char *checked_uniform_str = "checked";
 	GLint checked_location = glGetUniformLocation(program, checked_uniform_str);
 	if(checked_location == -1)
@@ -2171,13 +2192,27 @@ int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instan
 
 		return -1;	
 	}
+#endif 
 
 
 	instance->shader_program = program;
+
+
+	int result = nhgui_common_uniform_locations_find(&instance->locations, instance->shader_program);
+	if(result < 0){
+		glDeleteProgram(instance->shader_program);
+
+		fprintf(stderr, "nhgui_common_uniform_locations_find() failed. \n");
+		return -1;
+	}
+
+
+#if 0
 	instance->location_dimension = dimension_location;
 	instance->location_checked = checked_location;
 	instance->location_position = position_location;
 	instance->location_size = size_location;
+#endif 
 
 	return 0;
 }

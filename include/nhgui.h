@@ -207,11 +207,14 @@ struct nhgui_object_font_text_instance
 struct nhgui_object_radio_button_instance 
 {
 	GLuint shader_program;
-
+#if 0
 	GLint location_dimension;
 	GLint location_checked;
 	GLint location_position;
 	GLint location_size;
+#endif 
+
+	struct nhgui_common_uniform_locations locations;
 };
 
 struct nhgui_icon_menu
