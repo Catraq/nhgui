@@ -1,5 +1,7 @@
 #include "nhgui.h"
 
+#include "../config.h"
+
 
 
 int nhgui_context_initialize(
@@ -2059,30 +2061,6 @@ nhgui_object_radio_button(
 	}
 	
 
-
-#if 0
-	/* Scale by window relative resolution and calcuate mm per 1.0 unit mul with actual height and width */	
-	float s_x = (float)context->screen_resolution_x/(float)input->width_pixel * 1.0 /(float)context->screen_width_mm * (float)attribute->height_mm;
-	float s_y = (float)context->screen_resolution_y/(float)input->height_pixel * 1.0 /(float)context->screen_height_mm * (float)attribute->height_mm;
-
-	float p_y = (float)context->screen_resolution_y/(float)input->height_pixel * 1.0/(float)context->screen_height_mm * result_tmp.y_mm;
-	float p_x = (float)context->screen_resolution_x/(float)input->width_pixel * 1.0/(float)context->screen_width_mm * result_tmp.x_mm; ;
-	
-	/* Convert to gl cordinates [-1, 1] and move down with size otherwise the element will be above the screen */ 
-	p_y = 2.0*p_y-1.0;
-	p_x = 2.0*p_x-1.0;
-	
-	struct nhgui_result render_result = result;
-	render_result.y_inc_next = attribute->height_mm;
-	render_result.x_inc_next = attribute->height_mm;
-
-	glUseProgram(instance->shader_program);	
-
-	glUniform1ui(instance->location_checked, object->checked);
-	glUniform2f(instance->location_position, p_x, p_y);
-	glUniform2f(instance->location_size, s_x, s_y);
-	glUniform2ui(instance->location_dimension, input->width_pixel, input->height_pixel);
-#endif 
 	glUseProgram(instance->shader_program);	
 	
 
@@ -2148,52 +2126,6 @@ int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instan
 		return -1;	
 	
 	}
-#if 0
-	const char *checked_uniform_str = "checked";
-	GLint checked_location = glGetUniformLocation(program, checked_uniform_str);
-	if(checked_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", checked_uniform_str);
-		
-		glDeleteProgram(program);
-
-		return -1;	
-	}
-
-	const char *position_uniform_str = "position";
-	GLint position_location = glGetUniformLocation(program, position_uniform_str);
-	if(position_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", position_uniform_str);
-		
-		glDeleteProgram(program);
-
-		return -1;	
-	}
-
-	const char *size_uniform_str = "size";
-	GLint size_location = glGetUniformLocation(program, size_uniform_str);
-	if(size_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", size_uniform_str);
-		
-		glDeleteProgram(program);
-
-		return -1;	
-	}
-
-	const char *dimension_uniform_str = "dimension";
-	GLint dimension_location = glGetUniformLocation(program, dimension_uniform_str);
-	if(dimension_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", dimension_uniform_str);
-		
-		glDeleteProgram(program);
-
-		return -1;	
-	}
-#endif 
-
 
 	instance->shader_program = program;
 
@@ -2206,13 +2138,6 @@ int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instan
 		return -1;
 	}
 
-
-#if 0
-	instance->location_dimension = dimension_location;
-	instance->location_checked = checked_location;
-	instance->location_position = position_location;
-	instance->location_size = size_location;
-#endif 
 
 	return 0;
 }
