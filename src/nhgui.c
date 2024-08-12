@@ -2,6 +2,8 @@
 
 #include "../config.h"
 
+#define TEXT(x) #x
+
 
 
 int nhgui_context_initialize(
@@ -112,21 +114,28 @@ nhgui_common_uniform_locations_find(struct nhgui_common_uniform_locations *locat
 	GLint position_location = glGetUniformLocation(program, position_uniform_str);
 	if(position_location == -1)
 	{
+#if NHGUI_DEBUG
 		fprintf(stderr, "Could not find uniform location %s. \n", position_uniform_str);
+#endif 
 	}
 
 	const char *size_uniform_str = "size";
 	GLint size_location = glGetUniformLocation(program, size_uniform_str);
 	if(size_location == -1)
 	{
+#if NHGUI_DEBUG
 		fprintf(stderr, "Could not find uniform location %s. \n", size_uniform_str);
+#endif 
 	}
 
 	const char *dimension_uniform_str = "dimension";
 	GLint dimension_location = glGetUniformLocation(program, dimension_uniform_str);
 	if(dimension_location == -1)
 	{
+#if NHGUI_DEBUG
 		fprintf(stderr, "Could not find uniform location %s. \n", dimension_uniform_str);
+#endif 
+
 	}
 
 
@@ -134,7 +143,9 @@ nhgui_common_uniform_locations_find(struct nhgui_common_uniform_locations *locat
 	GLint color_location = glGetUniformLocation(program, color_uniform_str);
 	if(color_location == -1)
 	{
+#if NHUI_DEBUG
 		fprintf(stderr, "Could not find uniform location %s. \n", color_uniform_str);
+#endif 
 	}
 
 
@@ -285,6 +296,41 @@ GLuint nhgui_shader_vertex_create_from_file(
 	
 	return program;
 }
+
+GLuint nhgui_shader_vertex_create_from_memory(
+		uint8_t *vertex_source, uint32_t vertex_length, 
+		uint8_t *fragment_source, uint32_t fragment_length
+)
+{
+	const char *vertex_source_list[] = {
+		(const char *)vertex_source	
+	};	
+
+	int32_t vertex_source_length[] = {vertex_length};
+
+	const char *fragment_source_list[] = {
+		(const char *)fragment_source	
+	};	
+
+	int32_t fragment_source_length[] = {fragment_length};
+
+	GLuint program = nhgui_shader_vertex_create(
+			vertex_source_list, vertex_source_length, 1,
+			fragment_source_list, fragment_source_length, 1
+	);
+
+	if(program == 0)
+	{
+		fprintf(stderr, "Could not create shader program. \n");
+		return 0;	
+	
+	}
+	
+	return program;
+
+
+}
+
 
 GLuint nhgui_shader_vertex_create(
 		const char **vertex_source, 
@@ -585,17 +631,32 @@ nhgui_icon_blank(
 int 
 nhgui_icon_blank_initialize(struct nhgui_icon_blank_instance *instance)
 {
-	const char *vertex_source_filename = "../shaders/blank.vs";
-	const char *fragment_source_filename = "../shaders/blank.fs";
 
-	instance->program = nhgui_shader_vertex_create_from_file(
-			vertex_source_filename,
-			fragment_source_filename
+	char vertex_source[] = 
+				"#version 430 core \n "
+				"layout(location=0) in vec2 v_position; \n"
+				"uniform vec2 position; \n"
+				"uniform vec2 size;	\n"
+				"void main(){		\n"
+				"	gl_Position = vec4(position + 2.0*(v_position/2.0 + 0.5)*size, 0.0, 1.0);	\n"
+				"}		\n";
+
+	char fragment_source[] = 
+				"#version 430 core	\n"
+				"uniform vec3 color;	\n"
+				"out vec4 fcolor;	\n"
+				"void main(){		\n"
+				"	fcolor = vec4(color, 0);	\n"
+				"}			\n";	
+
+	instance->program = nhgui_shader_vertex_create_from_memory(
+			vertex_source, sizeof(vertex_source), 
+			fragment_source, sizeof(fragment_source)
 	);
 
 	if(instance->program == 0)
 	{
-		fprintf(stderr, "nhgui_shader_vertex_create_from_file() failed. \n");
+		fprintf(stderr, "nhgui_shader_vertex_create_from_memory() failed. \n");
 		return -1;	
 	
 	}
@@ -672,17 +733,43 @@ nhgui_icon_menu(
 int 
 nhgui_icon_menu_initialize(struct nhgui_icon_menu_instance *instance)
 {
-	const char *vertex_source_filename = "../shaders/menu.vs";
-	const char *fragment_source_filename = "../shaders/menu.fs";
+	char vertex_source[] = 
+				"#version 430 core \n "
+				"layout(location=0) in vec2 v_position; \n"
+				"uniform vec2 position; \n"
+				"uniform vec2 size;	\n"
+				"void main(){		\n"
+				"	gl_Position = vec4(position + 2.0*(v_position/2.0 + 0.5)*size, 0.0, 1.0);	\n"
+				"}		\n";
 
-	instance->program = nhgui_shader_vertex_create_from_file(
-			vertex_source_filename,
-			fragment_source_filename
+	char fragment_source[] = 
+				"#version 430 core	\n"
+				"uniform vec3 color;		\n"
+				"uniform uvec2 dimension;	\n"
+				"uniform vec2 position;		\n"
+				"uniform vec2 size;	\n"
+				"out vec4 fcolor;	\n"
+				"void main(){		\n"
+				"	vec2 dim = vec2(dimension);			\n"
+				"	vec2 uv = 2.0*vec2(gl_FragCoord.xy)/dim - 1.0;	\n"
+				"	float y1 = position.y + 2.0*size.y*3.0/10.0;	\n"
+				"	float y2 = position.y + 2.0*size.y*7.0/10.0;	\n"
+				"	float s = 2.0*size.y*1.0/10.0;			\n"
+				"	if((uv.y < y1 - s && uv.y < y1 + s) || (uv.y > y2 - s && uv.y < y2+s)){	\n"
+				"		discard;	\n"
+				"	}else{			\n"
+				"		fcolor = vec4(color, 0);	\n"
+				"	}				\n"
+				"}			\n";	
+
+	instance->program = nhgui_shader_vertex_create_from_memory(
+			vertex_source, sizeof(vertex_source), 
+			fragment_source, sizeof(fragment_source)
 	);
 
 	if(instance->program == 0)
 	{
-		fprintf(stderr, "nhgui_shader_vertex_create_from_file() failed. \n");
+		fprintf(stderr, "nhgui_shader_vertex_create_from_memory() failed. \n");
 		return -1;	
 	}
 	
@@ -743,13 +830,28 @@ nhgui_icon_text_cursor(
 int 
 nhgui_icon_text_cursor_initialize(struct nhgui_icon_text_cursor_instance *instance)
 {
-	const char *vertex_source_filename = "../shaders/text_cursor.vs";
-	const char *fragment_source_filename = "../shaders/text_cursor.fs";
+	char vertex_source[] = 
+				"#version 430 core \n "
+				"layout(location=0) in vec2 v_position; \n"
+				"uniform vec2 position; \n"
+				"uniform vec2 size;	\n"
+				"void main(){		\n"
+				"	gl_Position = vec4(position + 2.0*(v_position/2.0 + 0.5)*size, 0.0, 1.0);	\n"
+				"}		\n";
 
-	instance->program = nhgui_shader_vertex_create_from_file(
-			vertex_source_filename,
-			fragment_source_filename
+	char fragment_source[] = 
+				"#version 430 core	\n"
+				"uniform vec3 color;	\n"
+				"out vec4 fcolor;	\n"
+				"void main(){		\n"
+				"	fcolor = vec4(color, 0);	\n"
+				"}			\n";	
+
+	instance->program = nhgui_shader_vertex_create_from_memory(
+			vertex_source, sizeof(vertex_source), 
+			fragment_source, sizeof(fragment_source)
 	);
+
 
 	if(instance->program == 0)
 	{
@@ -1775,14 +1877,34 @@ nhgui_object_font_text_deinitialize(struct nhgui_object_font_text_instance *inst
 int 
 nhgui_object_font_text_initialize(struct nhgui_object_font_text_instance *instance)
 {
-	const char *vertex_source_filename = "../shaders/text.vs";
-	const char *fragment_source_filename = "../shaders/text.fs";
+	char vertex_source[] = 
+				"#version 430 core \n "
+				"layout(location=0) in vec2 v_position; \n"
+				"uniform vec2 position; \n"
+				"uniform vec2 size;	\n"
+				"out vec2 fragcoord;	\n"
+				"void main(){		\n"
+				"	fragcoord.x = (v_position + vec2(1)).x/2;		\n"
+				"	fragcoord.y = 1 - (v_position + vec2(1)).y/2;		\n"
+				"	gl_Position = vec4(position + 2.0*(v_position/2.0 + 0.5)*size, 0.0, 1.0);	\n"
+				"}		\n";
 
-	instance->program = nhgui_shader_vertex_create_from_file(
-			vertex_source_filename,
-			fragment_source_filename
-	);
+	char fragment_source[] = 
+				"#version 430 core	\n"
+				"uniform vec3 color;	\n"
+				"uniform sampler2D in_texture;	\n"
+				"in vec2 fragcoord;		\n"
+				"out vec4 fcolor;	\n"
+				"void main(){		\n"
+				"	vec4 s = vec4(1,1,1, texture(in_texture, fragcoord).r);	\n"
+				"	fcolor = vec4(color, 1.0) * s;	\n"
+				"}			\n";	
 
+	instance->program = nhgui_shader_vertex_create_from_memory(
+			vertex_source, sizeof(vertex_source), 
+			fragment_source, sizeof(fragment_source)
+	);	
+	
 	if(instance->program == 0)
 	{
 		fprintf(stderr, "nhgui_shader_vertex_create_from_file() failed. \n");
@@ -2089,43 +2211,59 @@ nhgui_object_radio_button(
 
 int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instance *instance)
 {
-	const char *vertex_source_filename = "../shaders/radio_button.vs";
-	const char *fragment_source_filename = "../shaders/radio_button.fs";
+	char vertex_source[] = 
+				"#version 430 core \n "
+				"layout(location=0) in vec2 v_position; \n"
+				"uniform vec2 position; \n"
+				"uniform vec2 size;	\n"
+				"out float radius;	\n"
+				"out vec2 center;	\n"
+				"void main(){		\n"
+				"	radius = size.x;	\n"
+				"	center = position + size;	\n"
+				"	gl_Position = vec4(position + 2.0*(v_position/2.0 + 0.5)*size, 0.0, 1.0);	\n"
+				"}		\n";
 
-	uint8_t vertex_source[NGGUI_SHADER_FILE_MAX_SIZE];
-	uint8_t fragment_source[NGGUI_SHADER_FILE_MAX_SIZE];
+	char fragment_source[] = 
+				"#version 430 core	\n"
+				"uniform vec3 color;	\n"
+				"uniform uint checked;	\n"
+				"uniform uvec2 dimension;	\n"
+				"in vec2 center;	\n"
+				"in float radius;	\n"
+				"out vec4 fcolor;	\n"
+				"void main(){		\n"
+				"	vec2 dim = vec2(dimension);	\n"
+				"	vec2 uv = 2.0*vec2(gl_FragCoord.xy) - 1.0;	\n"
+				"	vec2 d = uv - center;				\n"
+				"	d.x *= dim.x/dim.y;				\n"
+				"	float r = radius * dim.x/dim.y;			\n"
+				"	float v = dot(d, d);				\n"
+				"	if(v < r*r){					\n"
+				"		if(v < r * r - r*r/2){				\n"
+				"			if(v < r*r - r*r*1.5/2 && checked > 0){	\n"
+				"				fcolor = vec4(0, 0, 0, 0);	\n"
+				"			}else{					\n"
+				"				discard;"
+				"			}		\n"
+				"		}		\n"
+				"	}				\n"
+				"	else discard;		\n"
+				"}			\n";	
 
-	uint32_t vertex_read = misc_file_read_buffer(vertex_source_filename, vertex_source, NGGUI_SHADER_FILE_MAX_SIZE);
-	if(vertex_read == 0){
-		fprintf(stderr, "Could not read file %s \n", vertex_source_filename);
-		return -1;
-	}
-
-	uint32_t fragment_read = misc_file_read_buffer(fragment_source_filename, fragment_source, NGGUI_SHADER_FILE_MAX_SIZE);
-	if(fragment_read == 0){
-		fprintf(stderr, "Could not read file %s \n", fragment_source_filename);
-		return -1;
-	}
-
-	const char *vertex_source_list[] = {
-		(const char*)vertex_source	
-	};	
-
-	const char *fragment_source_list[] = {
-		(const char*)fragment_source	
-	};	
-
-	GLuint program = nhgui_shader_vertex_create(
-			vertex_source_list, NULL, 1,
-			fragment_source_list, NULL, 1
+	GLuint program = nhgui_shader_vertex_create_from_memory(
+			vertex_source, sizeof(vertex_source), 
+			fragment_source, sizeof(fragment_source)
 	);
 
 	if(program == 0)
 	{
-		fprintf(stderr, "Could not create shader program. \n");
+		fprintf(stderr, "nhgui_shader_vertex_create_from_memory() failed. \n");
 		return -1;	
 	
 	}
+
+
 
 	instance->shader_program = program;
 

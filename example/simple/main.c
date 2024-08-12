@@ -127,7 +127,7 @@ int main(int args, char *argv[])
 
 
 	const char *radio_button_text[] = {
-		"I accept that you may have my sould.",
+		"I accept that you may have my soul.",
 		"I agree that the terms of service is good. ",
 		"I hope this gui will be useful", 
 		"I accept that I lack imagination",
