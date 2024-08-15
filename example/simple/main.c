@@ -83,12 +83,6 @@ int main(int args, char *argv[])
 		.height_mm = 10,
 	};
 
-	struct nhgui_render_attribute radio_render_attribute = {
-		.height_mm = 3,
-		.width_mm = 40, 
-	};
-
-
 
 	const char *font_filename = "../data/UbuntuMono-R.ttf";
 	struct nhgui_object_font font;
@@ -120,6 +114,12 @@ int main(int args, char *argv[])
 	}
 
 	
+	struct nhgui_render_attribute radio_render_attribute = {
+		.height_mm = 3,
+		.width_mm = 40, 
+	};
+
+
 
 	const uint32_t radio_button_row = 5;
 	struct 	nhgui_object_radio_button radio_button_object[radio_button_row];
@@ -131,7 +131,7 @@ int main(int args, char *argv[])
 		"I agree that the terms of service is good. ",
 		"I hope this gui will be useful", 
 		"I accept that I lack imagination",
-		"I may not have hope and dreams."
+		"pI may not have hope and dreams."
 	};
 
 	struct nhgui_window nhwindow = {};
@@ -154,7 +154,12 @@ int main(int args, char *argv[])
 	char add_buffer[input_buffer_size];
 	struct nhgui_object_input_field add_field = {};
 
-	struct nhgui_object_text_list list_object = {};
+	struct nhgui_object_text_list list_object = {
+		.text_color = (struct nhgui_vec3){.x = 1, .y = 0, .z = 0},
+		.selected_text_color = (struct nhgui_vec3){.x = 0, .y = 1, .z = 0},
+		.char_scroll_per_sec = 1.0,
+
+	};
 	uint32_t list_entries_length[] = 
 	{
 		strlen(radio_button_text[0]), 	
@@ -195,7 +200,7 @@ int main(int args, char *argv[])
 		};
 
 
-		result = nhgui_window_begin(
+		struct nhgui_result root_result = nhgui_window_begin(
 			&nhwindow,
 			&context,
 			&window_attribute,
@@ -203,8 +208,8 @@ int main(int args, char *argv[])
 			result	
 		);
 
+	
 
-		
 		/* Menu button */
 		result = nhgui_result_margin(result, 1, 1);
 		struct nhgui_result m_render_result = nhgui_icon_menu(
@@ -239,12 +244,15 @@ int main(int args, char *argv[])
 				c_render_result
 		);
 		result = nhgui_result_dec_y(result);
+		result = nhgui_result_margin(result, 0, 2);
+
+	
 		if(menu_object.clicked)
 		{
 			for(uint32_t j = 0; j < radio_button_row; j++)
 			{
 
-				result = nhgui_result_margin(result, 0, 1);
+				result = nhgui_result_margin(result, 0, 0);
 
 				uint32_t index = j;
 				result = nhgui_object_radio_button(
@@ -313,6 +321,7 @@ int main(int args, char *argv[])
 		res = nhgui_result_dec_y(res);	
 		res = nhgui_result_rewind_x_to(res, m_render_result); 
 
+
 		res = nhgui_object_text_list(
 				&list_object,
 				&context, 
@@ -328,20 +337,6 @@ int main(int args, char *argv[])
 
 	
 
-
-	#if 0	
-		const char test_string[] = "Test string";
-
-		nhgui_object_font_text(
-				&context, 
-				&font, 
-				test_string, 
-				sizeof(test_string), 
-				&font_render_attribute,
-				&input, 
-				result
-		);
-#endif 
 
 		nhgui_window_end(
 				&nhwindow,

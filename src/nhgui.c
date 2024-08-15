@@ -62,7 +62,8 @@ int nhgui_context_initialize(
 		fprintf(stderr, "nhgui_object_font_text_initialize() failed. \n");
 		return -1;	
 	}
-	
+
+#if NHGUI_OBJECT_RADIO_BUTTON	
 	result = nhgui_object_radio_button_initialize(&context->radio_button);
 	if(result < 0){
 
@@ -74,9 +75,10 @@ int nhgui_context_initialize(
 		fprintf(stderr, "nhgui_object_radio_button_initialize() failed. \n");
 		return -1;
 	}
+#endif 
 
 
-
+#if NHGUI_ICON_MENU
 	result = nhgui_icon_menu_initialize(&context->menu);
 	if(result < 0){
 
@@ -84,14 +86,26 @@ int nhgui_context_initialize(
 		nhgui_surface_deinitialize(&context->surface);
 		nhgui_icon_blank_deinitialize(&context->blank);
 		nhgui_object_font_text_deinitialize(&context->font);
-		nhgui_object_radio_button_deinitialize(&context->radio_button);
 
 		fprintf(stderr, "nhgui_icon_menu_initialize() failed. \n");
-		return -1;
+		goto failure;	
 	}
+#endif 
 
 
 	return 0;
+	
+	/* Clean up those instances that use a flag to determine initializion state */
+failure:
+#if NHGUI_ICON_MENU
+	nhgui_icon_menu_deinitialize(&context->menu);
+#endif 
+
+#if NHGUI_OBJECT_RADIO_BUTTON
+	nhgui_object_radio_button_deinitialize(&context->radio_button);
+#endif 
+
+	return -1;
 }
 
 void 
@@ -103,8 +117,14 @@ nhgui_context_deinitialize(
 	nhgui_surface_deinitialize(&context->surface);
 	nhgui_icon_blank_deinitialize(&context->blank);
 	nhgui_object_font_text_deinitialize(&context->font);
+
+#if NHGUI_OBJECT_RADIO_BUTTON
 	nhgui_object_radio_button_deinitialize(&context->radio_button);
+#endif 
+
+#if NHGUI_ICON_MENU
 	nhgui_icon_menu_deinitialize(&context->menu);
+#endif 
 }
 
 int
@@ -182,7 +202,7 @@ nhgui_common_uniform_locations_set(
 	p_y = 2.0*p_y-1.0;
 	p_x = 2.0*p_x-1.0;
 	
-	if(locations->size != -1){	
+	if(locations->position != -1){	
 		glUniform2f(locations->position, p_x, p_y);
 		CHECK_GL_ERROR();
 	}
@@ -200,7 +220,6 @@ nhgui_common_uniform_locations_set(
 	if(locations->dimension !=  -1){
 		glUniform2ui(locations->dimension, input->width_pixel, input->height_pixel);
 		CHECK_GL_ERROR();
-		printf("%i \n", locations->dimension);
 	}
 
 }
@@ -632,7 +651,7 @@ int
 nhgui_icon_blank_initialize(struct nhgui_icon_blank_instance *instance)
 {
 
-	char vertex_source[] = 
+	uint8_t vertex_source[] = 
 				"#version 430 core \n "
 				"layout(location=0) in vec2 v_position; \n"
 				"uniform vec2 position; \n"
@@ -641,7 +660,7 @@ nhgui_icon_blank_initialize(struct nhgui_icon_blank_instance *instance)
 				"	gl_Position = vec4(position + 2.0*(v_position/2.0 + 0.5)*size, 0.0, 1.0);	\n"
 				"}		\n";
 
-	char fragment_source[] = 
+	uint8_t fragment_source[] = 
 				"#version 430 core	\n"
 				"uniform vec3 color;	\n"
 				"out vec4 fcolor;	\n"
@@ -680,7 +699,7 @@ nhgui_icon_blank_deinitialize(struct nhgui_icon_blank_instance *instance)
 }
 
 
-
+#if NHGUI_ICON_MENU
 struct nhgui_result
 nhgui_icon_menu(
 		struct nhgui_icon_menu *object,
@@ -733,7 +752,7 @@ nhgui_icon_menu(
 int 
 nhgui_icon_menu_initialize(struct nhgui_icon_menu_instance *instance)
 {
-	char vertex_source[] = 
+	uint8_t vertex_source[] = 
 				"#version 430 core \n "
 				"layout(location=0) in vec2 v_position; \n"
 				"uniform vec2 position; \n"
@@ -742,7 +761,7 @@ nhgui_icon_menu_initialize(struct nhgui_icon_menu_instance *instance)
 				"	gl_Position = vec4(position + 2.0*(v_position/2.0 + 0.5)*size, 0.0, 1.0);	\n"
 				"}		\n";
 
-	char fragment_source[] = 
+	uint8_t fragment_source[] = 
 				"#version 430 core	\n"
 				"uniform vec3 color;		\n"
 				"uniform uvec2 dimension;	\n"
@@ -755,7 +774,7 @@ nhgui_icon_menu_initialize(struct nhgui_icon_menu_instance *instance)
 				"	float y1 = position.y + 2.0*size.y*3.0/10.0;	\n"
 				"	float y2 = position.y + 2.0*size.y*7.0/10.0;	\n"
 				"	float s = 2.0*size.y*1.0/10.0;			\n"
-				"	if((uv.y < y1 - s && uv.y < y1 + s) || (uv.y > y2 - s && uv.y < y2+s)){	\n"
+				"	if((uv.y > y1 - s && uv.y < y1 + s) || (uv.y > y2 - s && uv.y < y2+s)){	\n"
 				"		discard;	\n"
 				"	}else{			\n"
 				"		fcolor = vec4(color, 0);	\n"
@@ -781,6 +800,7 @@ nhgui_icon_menu_initialize(struct nhgui_icon_menu_instance *instance)
 		return -1;
 	}
 
+	instance->initialized = 1;
 
 	return 0;
 }
@@ -788,8 +808,14 @@ nhgui_icon_menu_initialize(struct nhgui_icon_menu_instance *instance)
 void
 nhgui_icon_menu_deinitialize(struct nhgui_icon_menu_instance *instance)
 {
-	glDeleteProgram(instance->program);
+	if(instance->initialized > 0)
+	{
+		instance->initialized = 0;
+		glDeleteProgram(instance->program);
+	}
 }
+
+#endif 
 
 struct nhgui_result 
 nhgui_icon_text_cursor(
@@ -830,7 +856,7 @@ nhgui_icon_text_cursor(
 int 
 nhgui_icon_text_cursor_initialize(struct nhgui_icon_text_cursor_instance *instance)
 {
-	char vertex_source[] = 
+	uint8_t vertex_source[] = 
 				"#version 430 core \n "
 				"layout(location=0) in vec2 v_position; \n"
 				"uniform vec2 position; \n"
@@ -839,7 +865,7 @@ nhgui_icon_text_cursor_initialize(struct nhgui_icon_text_cursor_instance *instan
 				"	gl_Position = vec4(position + 2.0*(v_position/2.0 + 0.5)*size, 0.0, 1.0);	\n"
 				"}		\n";
 
-	char fragment_source[] = 
+	uint8_t fragment_source[] = 
 				"#version 430 core	\n"
 				"uniform vec3 color;	\n"
 				"out vec4 fcolor;	\n"
@@ -1227,7 +1253,7 @@ nhgui_object_text_list(
 					context, 
 					font, 
 					&entry[i][overflow_count_index],
-					entry_length[i] - overflow_count_index,
+					entry_length[i] - overflow_count,
 					&selected_font_attribute,
 					input, 
 					r	
@@ -1877,7 +1903,7 @@ nhgui_object_font_text_deinitialize(struct nhgui_object_font_text_instance *inst
 int 
 nhgui_object_font_text_initialize(struct nhgui_object_font_text_instance *instance)
 {
-	char vertex_source[] = 
+	uint8_t vertex_source[] = 
 				"#version 430 core \n "
 				"layout(location=0) in vec2 v_position; \n"
 				"uniform vec2 position; \n"
@@ -1889,7 +1915,7 @@ nhgui_object_font_text_initialize(struct nhgui_object_font_text_instance *instan
 				"	gl_Position = vec4(position + 2.0*(v_position/2.0 + 0.5)*size, 0.0, 1.0);	\n"
 				"}		\n";
 
-	char fragment_source[] = 
+	uint8_t fragment_source[] = 
 				"#version 430 core	\n"
 				"uniform vec3 color;	\n"
 				"uniform sampler2D in_texture;	\n"
@@ -2146,6 +2172,8 @@ nhgui_object_font_text_area(
 
 
 
+#if NHGUI_OBJECT_RADIO_BUTTON
+
 struct nhgui_result
 nhgui_object_radio_button(
 	       	struct nhgui_object_radio_button *object,
@@ -2185,13 +2213,14 @@ nhgui_object_radio_button(
 
 	glUseProgram(instance->shader_program);	
 	
+	glUniform1ui(instance->location_checked, object->checked);	
 
 	nhgui_common_uniform_locations_set(
 			&instance->locations,
 		       	context,
 		       	input,
-		       	result,
-		       	attribute->width_mm, attribute->width_mm,
+		       	result_tmp,
+		       	attribute->height_mm, attribute->height_mm,
 			attribute->r, attribute->g, attribute->b
 	);
 
@@ -2199,8 +2228,8 @@ nhgui_object_radio_button(
 	nhgui_surface_render(&context->surface);
 
 	struct nhgui_result r = result;
-	r.y_inc_next = attribute->width_mm;
-	r.x_inc_next = attribute->width_mm;
+	r.y_inc_next = attribute->height_mm;
+	r.x_inc_next = attribute->height_mm;
 
 	r.y_min_mm = r.y_min_mm < r.y_mm - r.y_inc_next ? r.y_min_mm : r.y_mm - r.y_inc_next;
 	r.x_max_mm = r.x_max_mm < r.x_mm + r.x_inc_next ? r.x_mm + r.x_inc_next : r.x_max_mm;
@@ -2211,7 +2240,7 @@ nhgui_object_radio_button(
 
 int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instance *instance)
 {
-	char vertex_source[] = 
+	uint8_t vertex_source[] = 
 				"#version 430 core \n "
 				"layout(location=0) in vec2 v_position; \n"
 				"uniform vec2 position; \n"
@@ -2224,7 +2253,7 @@ int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instan
 				"	gl_Position = vec4(position + 2.0*(v_position/2.0 + 0.5)*size, 0.0, 1.0);	\n"
 				"}		\n";
 
-	char fragment_source[] = 
+	uint8_t fragment_source[] = 
 				"#version 430 core	\n"
 				"uniform vec3 color;	\n"
 				"uniform uint checked;	\n"
@@ -2234,12 +2263,13 @@ int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instan
 				"out vec4 fcolor;	\n"
 				"void main(){		\n"
 				"	vec2 dim = vec2(dimension);	\n"
-				"	vec2 uv = 2.0*vec2(gl_FragCoord.xy) - 1.0;	\n"
+				"	vec2 uv = 2.0*vec2(gl_FragCoord.xy)/dim - 1.0;	\n"
 				"	vec2 d = uv - center;				\n"
 				"	d.x *= dim.x/dim.y;				\n"
 				"	float r = radius * dim.x/dim.y;			\n"
 				"	float v = dot(d, d);				\n"
 				"	if(v < r*r){					\n"
+				"		fcolor = vec4(color, 0);		\n"
 				"		if(v < r * r - r*r/2){				\n"
 				"			if(v < r*r - r*r*1.5/2 && checked > 0){	\n"
 				"				fcolor = vec4(0, 0, 0, 0);	\n"
@@ -2250,7 +2280,8 @@ int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instan
 				"	}				\n"
 				"	else discard;		\n"
 				"}			\n";	
-
+	
+	
 	GLuint program = nhgui_shader_vertex_create_from_memory(
 			vertex_source, sizeof(vertex_source), 
 			fragment_source, sizeof(fragment_source)
@@ -2276,14 +2307,29 @@ int nhgui_object_radio_button_initialize(struct nhgui_object_radio_button_instan
 		return -1;
 	}
 
+	const char *checked_str = "checked";
+	GLint checked_location = glGetUniformLocation(program, checked_str);
+	if(checked_location == -1){
+		glDeleteProgram(instance->shader_program);
+		fprintf(stderr, "Could not find checked uniform location. \n");
+		return -1;
+	}
+	instance->location_checked = checked_location;
+
+	instance->initialized = 1;
 
 	return 0;
 }
 
 void nhgui_object_radio_button_deinitialize(struct nhgui_object_radio_button_instance *instance)
 {
-	glDeleteProgram(instance->shader_program);
+	if(instance->initialized > 0)
+	{
+		instance->initialized = 0;
+		glDeleteProgram(instance->shader_program);
+	}
 }
+#endif 
 
 int32_t 
 nhgui_input_buffer(

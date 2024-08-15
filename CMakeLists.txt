@@ -40,5 +40,6 @@ target_include_directories(nhgui PUBLIC "include/")
 
 
 add_subdirectory(example/list)
+add_subdirectory(example/simple)
 
 
