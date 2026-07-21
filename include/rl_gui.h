@@ -135,9 +135,6 @@ struct rl_gui_surface
 
 struct rl_gui_icon_menu_instance
 {
-	/* > 0 if initialized. */
-	int initialized;
-
 	GLuint program;
 
 	struct rl_gui_common_uniform_locations locations;
@@ -160,36 +157,11 @@ struct rl_gui_icon_blank_instance
 
 
 
-struct rl_gui_object_font_character
-{
-	/* Opengl texture object */
-	GLuint texture;
-	
-	/* Desired height in mm */
-	float height_mm;	
-
-	/* Width and height of character in pixels */
-	uint32_t width;
-	uint32_t height;
-
-	/* See freetype glyph documentation */
-	uint32_t bearing_x;
-	uint32_t bearing_y;
-	uint32_t advance_x;	
-};
-
 struct rl_gui_object_font
 {
-	/* Height used for generating the fonts.
-	 * Used for scaling 
-	 * */
-	float height_mm;
-	/* Max delta in y of characters.
-	 * Used for centering text in y direction
-	 * */
-	float delta_y_max;
+	/* Used by freetype */
+	FT_Face face;
 
-	struct rl_gui_object_font_character character[128];
 };
 
 
@@ -203,8 +175,6 @@ struct rl_gui_object_font_text_instance
 
 struct rl_gui_object_radio_button_instance 
 {
-	/* 0 > if initialized */
-	int initialized; 
 
 	GLuint shader_program;
 	
@@ -304,6 +274,9 @@ struct rl_gui_object_text_list
 
 struct rl_gui_context
 {
+	//Freetype instance 
+	FT_Library ft;
+
 	/* Surface used for rendering */
 	struct rl_gui_surface surface;
 
@@ -352,7 +325,6 @@ int rl_gui_context_initialize(
 void rl_gui_context_deinitialize(
 		struct rl_gui_context *context
 );
-
 
 
 /* 
@@ -453,7 +425,6 @@ rl_gui_icon_blank_no_object(
 
 /* 
  * Draw quad but support input 
- * Attribute describes width, height and color.
  */
 struct rl_gui_result 
 rl_gui_icon_blank(
@@ -539,19 +510,7 @@ rl_gui_object_font_text_overflow_count(
 );
 
 /* 
- * Calculate the max delta in y direction between the characters 
- */
-float 
-rl_gui_object_font_text_delta_y_max(
-		const struct rl_gui_context *context, 
-		const struct rl_gui_object_font *font,
-		const struct rl_gui_render_attribute *attribute,
-		const char *text, 
-		const uint32_t text_length 
-);
-
-/* 
- * Draw text with height and color as described in attribute.
+ * Draw text with height described in attribute 
  */
 struct rl_gui_result
 rl_gui_object_font_text(
@@ -593,110 +552,6 @@ rl_gui_object_radio_button(
 	       	const struct rl_gui_input *input,
 	       	const struct rl_gui_result result
 );
-
-
-/* Internal functions */
-
-int32_t 
-rl_gui_input_buffer(
-	char *input_buffer, 
-	uint32_t *input_buffer_length,
-	uint32_t input_buffer_size, 
-	struct rl_gui_input *input, 
-	uint32_t *input_index
-);
-
-int 
-rl_gui_icon_blank_initialize(struct rl_gui_icon_blank_instance *instance);
-
-void
-rl_gui_icon_blank_deinitialize(struct rl_gui_icon_blank_instance *instance);
-
-
-int 
-rl_gui_icon_text_cursor_initialize(struct rl_gui_icon_text_cursor_instance *instance);
-
-void
-rl_gui_icon_text_cursor_deinitialize(struct rl_gui_icon_text_cursor_instance *instance);
-
-
-int 
-rl_gui_object_font_text_initialize(struct rl_gui_object_font_text_instance *instance);
-
-void
-rl_gui_object_font_text_deinitialize(struct rl_gui_object_font_text_instance *instance);
-
-
-
-int rl_gui_object_radio_button_initialize(
-		struct rl_gui_object_radio_button_instance *instance
-);
-
-
-void rl_gui_object_radio_button_deinitialize(
-		struct rl_gui_object_radio_button_instance *instance
-);
-
-
-
-int 
-rl_gui_icon_menu_initialize(
-		struct rl_gui_icon_menu_instance *instance
-);
-
-void
-rl_gui_icon_menu_deinitialize(
-		struct rl_gui_icon_menu_instance *instance
-);
-
-
-
-
-
-GLuint rl_gui_shader_vertex_create_from_file(
-		const char *vertex_source_filename, 
-	       	const char *fragment_source_filename
-);
-
-GLuint rl_gui_shader_vertex_create(
-		const char **vertex_source, 
-		int32_t *vertex_source_length, 
-		uint32_t vertex_source_count, 
-		const char **fragment_source,
-	       	int32_t *fragment_source_length,
-	       	uint32_t fragment_source_count
-);
-
-int rl_gui_common_uniform_locations_find(
-		struct rl_gui_common_uniform_locations *locations, 
-		const GLuint program
-);
-
-void rl_gui_common_uniform_locations_set(
-		const struct rl_gui_common_uniform_locations *locations,
-	       	const struct rl_gui_context *context,
-	       	const struct rl_gui_input *input,
-	       	const struct rl_gui_result result,
-	       	const float width_mm, const float height_mm,
-		const float r, const float g, const float b
-);
-int rl_gui_surface_initialize(
-		struct rl_gui_surface *surface
-);
-
-void rl_gui_surface_deinitialize(
-		struct rl_gui_surface *surface
-);
-
-void rl_gui_surface_render(
-		const struct rl_gui_surface *rl_gui_surface
-);
-
-void rl_gui_surface_render_instanced(
-		const struct rl_gui_surface *rl_gui_surface,
-	       	const uint32_t instance_count
-);
-
 
 
 
