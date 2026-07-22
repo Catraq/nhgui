@@ -389,9 +389,7 @@ int main(int args, char *argv[])
 	
 
 
-		struct rl_gui_result result = {
-			.y_mm = context.screen_height_mm * (float)input.height_pixel/(float)context.screen_resolution_y,
-		};
+		struct rl_gui_result result =  rl_gui_result_begin(&input, &context);
 		
 	       	input_list_example(
 			&example_1,
@@ -405,10 +403,12 @@ int main(int args, char *argv[])
 
 
 		rl_gui_glfw_frame_end(&frame, &input);	
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 	
+	rl_gui_object_font_freetype_characters_deinitialize(&font);
 	rl_gui_context_deinitialize(&context);
 
 	glfwDestroyWindow(window);

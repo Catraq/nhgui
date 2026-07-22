@@ -322,6 +322,19 @@ rl_gui_common_uniform_locations_set(
 }
 
 struct rl_gui_result 
+rl_gui_result_begin(
+		struct rl_gui_input *input,
+		struct rl_gui_context *context
+		)
+{
+	struct rl_gui_result result = {
+		.y_mm = context->screen_height_mm * (float)input->height_pixel/(float)context->screen_resolution_y,
+	};
+	return result;
+}
+
+
+struct rl_gui_result 
 rl_gui_result_margin(struct rl_gui_result result, float margin_x_mm, float margin_y_mm)
 {
 	result.x_mm += margin_x_mm;

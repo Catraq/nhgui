@@ -177,10 +177,8 @@ int main(int args, char *argv[])
 		
 		glEnable(GL_SCISSOR_TEST);
 
-		struct rl_gui_result result = {
-			.y_mm = context.screen_height_mm * (float)input.height_pixel/(float)context.screen_resolution_y,
-		};
 
+		struct rl_gui_result result =  rl_gui_result_begin(&input, &context);
 
 		/* Menu button */
 		struct rl_gui_result m_render_result = rl_gui_icon_menu(
@@ -313,6 +311,7 @@ int main(int args, char *argv[])
 		glfwPollEvents();
 	}
 	
+	rl_gui_object_font_freetype_characters_deinitialize(&font);
 	rl_gui_context_deinitialize(&context);
 
 	glfwDestroyWindow(window);
