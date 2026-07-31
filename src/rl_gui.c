@@ -463,7 +463,7 @@ rl_gui_object_text_list(
 			if(overflow_count > 0 && list->char_scroll_per_sec > 0)
 			{
 				uint32_t s = input->time_sec/list->char_scroll_per_sec;
-				overflow_count_index = s%overflow_count;
+				overflow_count_index = s%(overflow_count+1);
 			}
 
 			struct rl_gui_render_attribute selected_font_attribute = *attribute;
@@ -471,11 +471,33 @@ rl_gui_object_text_list(
 			selected_font_attribute.g = list->selected_text_color.y;
 			selected_font_attribute.b = list->selected_text_color.z;
 
+			/* Convert byte index to utf-8 char index */
+			uint32_t utf8_byte_index_1 = 0;
+			for(uint32_t j = 0; j < overflow_count_index; j++)
+			{
+				uint32_t c = 0;
+				uint32_t c_inc = utf8_decode(&entry[i][utf8_byte_index_1], &c);
+				if(c_inc == 0){
+					break;
+				}
+				utf8_byte_index_1 += c_inc;	
+			}
+
+			uint32_t utf8_byte_index_2 = 0;
+			for(uint32_t j = 0; j < overflow_count; j++)
+			{
+				uint32_t c = 0;
+				uint32_t c_inc = utf8_decode(&entry[i][utf8_byte_index_2], &c);
+				if(c_inc == 0){
+					break;
+				}
+				utf8_byte_index_2 += c_inc;	
+			}
 			rl_gui_object_font_text(
 					context, 
 					font, 
-					&entry[i][overflow_count_index],
-					entry_length[i] - overflow_count,
+					&entry[i][utf8_byte_index_1],
+					entry_length[i] - utf8_byte_index_2,
 					&selected_font_attribute,
 					input, 
 					r	
@@ -514,19 +536,42 @@ rl_gui_object_text_list(
 			if(overflow_count > 0 && list->char_scroll_per_sec > 0)
 			{
 				uint32_t s = input->time_sec/list->char_scroll_per_sec;
-				overflow_count_index = (overflow_count + s)%overflow_count;
+				overflow_count_index = s%(overflow_count+1);
 			}
 
 			struct rl_gui_render_attribute font_attribute = *attribute;
 			font_attribute.r = list->text_color.x;
 			font_attribute.g = list->text_color.y;
 			font_attribute.b = list->text_color.z;
+			
+			/* Convert byte index to utf-8 char index */
+			uint32_t utf8_byte_index_1 = 0;
+			for(uint32_t j = 0; j < overflow_count_index; j++)
+			{
+				uint32_t c = 0;
+				uint32_t c_inc = utf8_decode(&entry[i][utf8_byte_index_1], &c);
+				if(c_inc == 0){
+					break;
+				}
+				utf8_byte_index_1 += c_inc;	
+			}
+
+			uint32_t utf8_byte_index_2 = 0;
+			for(uint32_t j = 0; j < overflow_count; j++)
+			{
+				uint32_t c = 0;
+				uint32_t c_inc = utf8_decode(&entry[i][utf8_byte_index_2], &c);
+				if(c_inc == 0){
+					break;
+				}
+				utf8_byte_index_2 += c_inc;	
+			}
 
 			rl_gui_object_font_text(
 					context, 
 					font, 
-					&entry[i][overflow_count_index],
-					entry_length[i] - overflow_count,
+					&entry[i][utf8_byte_index_1],
+					entry_length[i] - utf8_byte_index_2,
 					&font_attribute,
 					input, 
 					r	
@@ -1133,6 +1178,20 @@ rl_gui_object_font_text_overflow_count(
 		const uint32_t text_length
 )
 {
+	uint32_t str_index = 0;	
+	uint32_t char_count = 0;
+	while(str_index < text_length)
+	{
+		
+		uint32_t c = 0;
+		uint32_t c_inc = utf8_decode(&text[str_index], &c);
+		if(c_inc == 0){
+			break;
+		}
+		str_index += c_inc;	
+		char_count++;
+	}
+
 
 
 	/* Find number of characters that is past result, 
@@ -1143,8 +1202,9 @@ rl_gui_object_font_text_overflow_count(
 	float x_mm_max = within.x_mm + within.x_inc_next;
 	uint32_t overflow_count = 0;
 
-	uint32_t str_index = 0;	
-	for(uint32_t i = 0; i < text_length; i++)
+	str_index = 0;	
+	uint32_t i = 0;
+	while(str_index < text_length)
 	{
 		
 		uint32_t c = 0;
@@ -1165,10 +1225,11 @@ rl_gui_object_font_text_overflow_count(
 		/* See if it is past the boudning box */
 		if(within.x_mm + new_x_mm > x_mm_max)
 		{
-			overflow_count = text_length - i;		
+			overflow_count = char_count - i;		
 			break;
 		}
 		x_mm += (font->face->glyph->advance.x >> 6) * mm_per_pixel_x;
+		i++;
 	}
 
 	return overflow_count;

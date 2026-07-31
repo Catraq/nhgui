@@ -102,7 +102,7 @@ struct rl_gui_input
 	uint32_t selected_new_raise;
 	
 	/* Input from keyboard */	
-	char input[NHGUI_INPUT_MAX];
+	uint8_t input[NHGUI_INPUT_MAX];
 	uint32_t input_length;
 
 
