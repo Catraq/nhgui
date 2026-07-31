@@ -1956,7 +1956,7 @@ rl_gui_object_font_text(
 	float mm_per_pixel_y = (float)context->screen_height_mm/(float)context->screen_resolution_y;
 	
 	uint32_t str_index = 0;
-	for(uint32_t i = 0; i < text_length; i++)
+	while(str_index  < text_length)
 	{
 		uint32_t c = 0;
 		uint32_t c_inc = utf8_decode(&text[str_index], &c);
@@ -2060,10 +2060,16 @@ rl_gui_object_font_text_area(
 		float x_mm_max = background_result.x_mm + background_result.x_inc_next;
 
 		/* Make sure that curr_char always is increased by one */
-		uint32_t char_within = 1;
-		for(uint32_t i = curr_char; i < input_buffer_size; i++)
+	
+		uint32_t c_len = 0;
+		uint32_t curr_char_inner = curr_char;
+		uint32_t curr_char_len = 0;
+		while(curr_char_inner < input_buffer_size)
 		{
-			unsigned char c = input_buffer[i];
+			uint32_t c = 0;	
+			c_len = utf8_decode(&input_buffer[curr_char_inner], &c);
+			curr_char_inner += c_len;
+			curr_char_len += c_len;
 			
 			if(FT_Load_Char(font->face, c, FT_LOAD_RENDER)){
 				fprintf(stderr, "Could not load characters %u from font file. \n", c);
@@ -2082,14 +2088,13 @@ rl_gui_object_font_text_area(
 				break;
 			}
 
-			char_within += 1;
 
 			x_mm += (font->face->glyph->advance.x >> 6) * mm_per_pixel_x;
 		}
 
 		/* Remove the character that was there just in case */
-		if(char_within > 1){
-			char_within -= 1;	
+		if(curr_char_len > c_len){
+			curr_char_len -= c_len;	
 		}
 		
 	
@@ -2106,13 +2111,13 @@ rl_gui_object_font_text_area(
 			context, 
 			font, 
 			&input_buffer[curr_char],
-			char_within,
+			curr_char_len,
 			&font_attribute,
 			input, 
 			background_result
 		);
 
-		curr_char += char_within;
+		curr_char += curr_char_len;
 
 		background_result = rl_gui_result_dec_y(background_result);
 	

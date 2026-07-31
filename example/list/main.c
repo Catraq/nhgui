@@ -236,9 +236,9 @@ input_list_example(
 
 	const char text_area_text[] = { 
 		"The input field will scroll when overfilled and the list will have "
-		"scrolling text when overfilled. Try to overfill them. It is also "
+		"scrolling text ®®when overfilled.®® Try to overfill them. It is also "
 		"possible to select text in the input field and edit it. If the "
-		"entire window is overfilled can a scroll bar be used. "
+		"entire window is overfilled can a scroll bar be ®® used. "
 	};
 
 	struct rl_gui_render_attribute text_area_attribute = 

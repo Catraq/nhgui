@@ -8,7 +8,7 @@ char character_callback_buffer[NHGUI_INPUT_MAX];
 
 void rl_gui_glfw_char_callback(GLFWwindow *window, unsigned int codepoint)
 {
-	if(codepoint > 30 && codepoint < 127){
+	if(codepoint > 30){
 		if(character_callback_buffer_index < NHGUI_INPUT_MAX)
 		{
 			character_callback_buffer[character_callback_buffer_index] = codepoint;
