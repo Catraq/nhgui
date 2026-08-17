@@ -15,7 +15,7 @@
 #include "rl_gui_error.h"
 
 
-#define NHGUI_INPUT_MAX 32
+#define RL_GUI_INPUT_MAX 32
 
 /* 
  * Attributes of the rendered object. Note that the attribute 
@@ -102,7 +102,7 @@ struct rl_gui_input
 	uint32_t selected_new_raise;
 	
 	/* Input from keyboard */	
-	uint8_t input[NHGUI_INPUT_MAX];
+	uint8_t input[RL_GUI_INPUT_MAX];
 	uint32_t input_length;
 
 
@@ -510,7 +510,6 @@ rl_gui_object_font_text_overflow_count(
 		const struct rl_gui_result within, 
 		const struct rl_gui_context *context,
 		const struct rl_gui_object_font *font,
-		const struct rl_gui_render_attribute *attribute,
 		const char *text,
 		const uint32_t text_length
 );

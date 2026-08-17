@@ -4,28 +4,51 @@
 
 
 uint32_t character_callback_buffer_index = 0;
-char character_callback_buffer[NHGUI_INPUT_MAX];
+char character_callback_buffer[RL_GUI_INPUT_MAX];
+
+
+/* Chatgpt genreated function. */
+size_t utf8_char_length(unsigned char c)
+{
+    if (c < 0x80)
+        return 1;       // ASCII
+
+    if ((c & 0xE0) == 0xC0)
+        return 2;       // 2-byte UTF-8 character
+
+    if ((c & 0xF0) == 0xE0)
+        return 3;       // 3-byte UTF-8 character
+
+    if ((c & 0xF8) == 0xF0)
+        return 4;       // 4-byte UTF-8 character
+
+    return 0;           // Invalid UTF-8 leading byte
+}
 
 void rl_gui_glfw_char_callback(GLFWwindow *window, unsigned int codepoint)
 {
 	if(codepoint > 30){
-		if(character_callback_buffer_index < NHGUI_INPUT_MAX)
+		uint32_t char_len = utf8_char_length((unsigned char)codepoint);
+		if(character_callback_buffer_index + char_len < RL_GUI_INPUT_MAX)
 		{
-			character_callback_buffer[character_callback_buffer_index] = codepoint;
-			character_callback_buffer_index++;
+			memcpy(&character_callback_buffer[character_callback_buffer_index], (unsigned char*)&codepoint, char_len); 
+			character_callback_buffer_index+=char_len;
 		}
 	}
 }
-
+#if 0
 void character_callback_erase_char()
 {
 	if(character_callback_buffer_index > 0)
 		character_callback_buffer_index--;
 }
+#endif 
+
 void
 character_callback_erase_buffer()
 {
 	character_callback_buffer_index = 0;
+	memset(character_callback_buffer, 0, RL_GUI_INPUT_MAX);
 }
 
 struct rl_gui_glfw_frame
@@ -71,10 +94,6 @@ rl_gui_glfw_frame_begin(struct rl_gui_glfw_frame *frame, GLFWwindow *window)
 	int backspace_key = glfwGetKey(window, GLFW_KEY_BACKSPACE);
 	uint32_t backspace_key_state  = backspace_key == GLFW_RELEASE ?  frame->backspace_key_last != backspace_key ? 1 : 0 : 0;
 	frame->backspace_key_last = backspace_key;
-	if(frame->backspace_key_last)
-	{
-		character_callback_erase_char();
-	}
 
 	/* Get screen pixel size */
 	int width, height;
