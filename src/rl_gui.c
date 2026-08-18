@@ -1339,19 +1339,7 @@ rl_gui_object_input_field(
 
 		if(index_found == 0)	
 		{
-			uint32_t offset = 0;
-			uint32_t j = 0;
-			while(offset < *input_buffer_length)	
-			{
-				uint32_t c = 0;
-				uint32_t c_inc = utf8_decode(&input_buffer[cursor_offset], &c);
-				if(c_inc == 0){
-					break;
-				}
-				offset += c_inc;	
-				j++;
-			}
-
+			uint32_t j = utf8_offset_to_count(input_buffer, *input_buffer_length);
 
 			field->cursor_index = overflow_count + j;
 		}
@@ -1398,7 +1386,6 @@ rl_gui_object_input_field(
 	
 	if(cursor_offset < *input_buffer_length)
 	{
-		printf("index: %u\n", field->cursor_index); 
 		/* Cursor is before last character. Make it the 
 		 * same size as the character it is hovering. */
 		uint32_t ca = 0;
