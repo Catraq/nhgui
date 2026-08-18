@@ -1366,7 +1366,6 @@ rl_gui_object_input_field(
 			if(c_inc == 0){
 				break;
 			}
-			overflow_offset_iter += c_inc;	
 
 
 			if(FT_Load_Char(font->face, c, FT_LOAD_RENDER)){
@@ -1376,7 +1375,10 @@ rl_gui_object_input_field(
 
 			float mm_per_pixel_x = (float)context->screen_width_mm/(float)context->screen_resolution_x;
 			float x_mm_inc = (font->face->glyph->advance.x >> 6) * mm_per_pixel_x;
+
+			overflow_offset_iter += c_inc;	
 			cursor_result.x_mm += x_mm_inc;
+
 		}
 	
 	}
@@ -1396,21 +1398,21 @@ rl_gui_object_input_field(
 	
 	if(cursor_offset < *input_buffer_length)
 	{
+		printf("index: %u\n", field->cursor_index); 
 		/* Cursor is before last character. Make it the 
 		 * same size as the character it is hovering. */
-		uint32_t c = 0;
-		uint32_t c_inc = utf8_decode(&input_buffer[cursor_offset], &c);
+		uint32_t ca = 0;
+		uint32_t c_inc = utf8_decode(&input_buffer[cursor_offset], &ca);
 		if(c_inc > 0)
 		{
-			if(FT_Load_Char(font->face, c, FT_LOAD_RENDER)){
-				fprintf(stderr, "Could not load characters %u from font file. \n", c);
+			if(FT_Load_Char(font->face, ca, FT_LOAD_RENDER)){
+				fprintf(stderr, "Could not load characters %u from font file. \n", ca);
 			}
 			else
 			{
 
 				float mm_per_pixel_x = (float)context->screen_width_mm/(float)context->screen_resolution_x;
-				float cursor_width_mm = (float)font->face->glyph->bitmap.width * mm_per_pixel_x;
-				
+				float cursor_width_mm = (font->face->glyph->advance.x >> 6) * mm_per_pixel_x;
 				cursor_attribute.width_mm = cursor_width_mm;
 			}
 
