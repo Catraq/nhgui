@@ -9,7 +9,6 @@ include_directories("${PROJECT_SOURCE_DIR}/include/")
 set(SOURCES 
 	"${PROJECT_SOURCE_DIR}/src/rl_gui.c"
 	"${PROJECT_SOURCE_DIR}/src/rl_gui_glfw.c"
-	"${PROJECT_SOURCE_DIR}/src/rl_gui_error.c"
 )
 
 add_library(rl_gui SHARED ${SOURCES})

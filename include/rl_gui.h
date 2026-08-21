@@ -12,10 +12,9 @@
 
 #include "math/vec.h"
 
-#include "rl_gui_error.h"
 
 
-#define RL_GUI_INPUT_MAX 32
+#define RL_GUI_INPUT_MAX 4 
 
 /* 
  * Attributes of the rendered object. Note that the attribute 

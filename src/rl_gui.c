@@ -270,33 +270,17 @@ rl_gui_common_uniform_locations_find(struct rl_gui_common_uniform_locations *loc
 	/* Common OpenGL uniform location finding */
 	const char *position_uniform_str = "position";
 	GLint position_location = glGetUniformLocation(program, position_uniform_str);
-	if(position_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", position_uniform_str);
-	}
+	
 
 	const char *size_uniform_str = "size";
 	GLint size_location = glGetUniformLocation(program, size_uniform_str);
-	if(size_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", size_uniform_str);
-	}
 
 	const char *dimension_uniform_str = "dimension";
 	GLint dimension_location = glGetUniformLocation(program, dimension_uniform_str);
-	if(dimension_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", dimension_uniform_str);
-	}
-
+	
 
 	const char *color_uniform_str = "color";
 	GLint color_location = glGetUniformLocation(program, color_uniform_str);
-	if(color_location == -1)
-	{
-		fprintf(stderr, "Could not find uniform location %s. \n", color_uniform_str);
-	}
-
 
 	locations->position = position_location;
 	locations->size = size_location;
@@ -334,22 +318,18 @@ rl_gui_common_uniform_locations_set(
 		
 	if(locations->position != -1){	
 		glUniform2f(locations->position, p_x, p_y);
-		CHECK_GL_ERROR();
 	}
 	
 	if(locations->size != -1){
 		glUniform2f(locations->size, s_x, s_y);
-		CHECK_GL_ERROR();
 	}
 	
 	if(locations->color != -1){
 		glUniform3f(locations->color, r, g, b);
-		CHECK_GL_ERROR();
 	}
 	
 	if(locations->dimension !=  -1){
 		glUniform2ui(locations->dimension, input->width_pixel, input->height_pixel);
-		CHECK_GL_ERROR();
 	}
 
 }
@@ -799,7 +779,6 @@ rl_gui_icon_blank_no_object(
 	result_tmp.y_mm -= attribute->height_mm;
 
 	glUseProgram(instance->program);	
-	CHECK_GL_ERROR();
 
 	rl_gui_common_uniform_locations_set(
 			&instance->locations,
@@ -809,10 +788,8 @@ rl_gui_icon_blank_no_object(
 		       	attribute->width_mm, attribute->height_mm,
 			attribute->r, attribute->g, attribute->b
 	);
-	CHECK_GL_ERROR();
 
 	rl_gui_surface_render(&context->surface);
-	CHECK_GL_ERROR();
 
 
 	
@@ -1459,7 +1436,6 @@ rl_gui_object_font_freetype_characters_initialize(
 	
 
 
-//	FT_Face face;
 	if(FT_New_Face(context->ft, filename, 0, &font->face))
 	{
 		fprintf(stderr, "FT_New_Face() failed with filename %s. \n", filename);
@@ -1986,21 +1962,22 @@ rl_gui_input_buffer(
 )
 {
 	int32_t delta = 0;
+	uint32_t input_buffer_chars = utf8_offset_to_count(input_buffer, *input_buffer_length);
 
 	/* In case a new buffer is provided and the previous buffer */
-	if(*input_index > *input_buffer_length)
+	if(*input_index > input_buffer_chars)
 	{
-		*input_index = *input_buffer_length;
+		*input_index = input_buffer_chars;
 	}
 
 	/* If backspace, then remove characters */
 	/* Only remove if there are something in the buffer */
-	if(input->key_backspace_state  > 0 && *input_buffer_length > 0)
+	if(input->key_backspace_state  > 0 && input_buffer_chars > 0)
 	{
 		/* Remove last character */
-		if(*input_index == *input_buffer_length)
+		if(*input_index == input_buffer_chars)
 		{
-			*input_buffer_length -= 1;
+			*input_buffer_length = index_to_utf8_offset(input_buffer, input_buffer_chars - 1);
 			*input_index -= 1;	
 
 			delta = -1;
@@ -2010,10 +1987,13 @@ rl_gui_input_buffer(
 		{
 
 			/* Remove at cursor index */
-			uint32_t count  = *input_buffer_length - *input_index;
-			memcpy(&input_buffer[*input_index-1], &input_buffer[*input_index], count);	
+			uint32_t input_index_start_offset = index_to_utf8_offset(input_buffer, *input_index - 1);
+			uint32_t input_index_end_offset = index_to_utf8_offset(input_buffer, *input_index);
+			uint32_t count  = input_buffer_chars - input_index_end_offset;
 
-			*input_buffer_length -= 1;
+			memcpy(&input_buffer[input_index_start_offset], &input_buffer[input_index_end_offset], count);	
+
+			*input_buffer_length -= input_index_end_offset-input_index_start_offset  ;
 			*input_index -= 1;	
 			delta = -1;
 		}
@@ -2022,37 +2002,39 @@ rl_gui_input_buffer(
 	else if(input->input_length > 0)
 	{
 		/* Simply add to the last character the last character */
-		if(*input_index == *input_buffer_length)
+		if(*input_index == input_buffer_chars)
 		{
 			uint32_t space = input_buffer_size - *input_buffer_length; 
-			uint32_t count = space < input->input_length ? space : input->input_length;
+			uint32_t count = space < input->input_length ? 0: input->input_length;
 			memcpy(&input_buffer[*input_buffer_length], input->input, count);
 
 			*input_buffer_length += count;
-			*input_index += count;
+			*input_index += 1;
+			
 
-			delta = count;
+			delta = -1;
 
 		}
 		/* Make sure that there are space in the input buffer */
 		else if(*input_buffer_length + input->input_length -1 < input_buffer_size)
 		{
+			uint32_t input_index_offset = index_to_utf8_offset(input_buffer, *input_index);
 			/* Index to move everything to */
-			uint32_t new_index = *input_index + input->input_length;
+			uint32_t new_index_offset = input_index_offset  + input->input_length;
 			/* Number of bytes to be moved */
-			uint32_t copy_length = *input_buffer_length - new_index;	
+			uint32_t copy_length = *input_buffer_length - new_index_offset;	
 
 			/* Copy chracter at cursor forward such that there is space for new chracter at the 
 			 * position */
-			memcpy(&input_buffer[new_index], &input_buffer[*input_index], copy_length); 
+			memcpy(&input_buffer[new_index_offset], &input_buffer[input_index_offset], copy_length); 
 
 			/* Then copy new character into the free position */
-			memcpy(&input_buffer[*input_index], input->input, input->input_length); 
+			memcpy(&input_buffer[input_index_offset], input->input, input->input_length); 
 		
 			*input_buffer_length += input->input_length;
-			*input_index += input->input_length;;
+			*input_index += 1; 
 
-			delta = input->input_length;
+			delta = 1;
 		}
 	}	
 	return delta;
