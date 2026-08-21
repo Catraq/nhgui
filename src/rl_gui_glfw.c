@@ -4,46 +4,55 @@
 
 
 uint32_t character_callback_buffer_index = 0;
-char character_callback_buffer[RL_GUI_INPUT_MAX];
+int8_t character_callback_buffer[RL_GUI_INPUT_MAX];
 
-
-/* Chatgpt genreated function. */
-size_t utf8_char_length(unsigned char c)
+/* AI generated code */
+uint32_t codepoint_to_utf8(uint32_t codepoint, uint8_t utf8[4])
 {
-    if (c < 0x80)
-        return 1;       // ASCII
+    /* Invalid Unicode range */
+    if (codepoint > 0x10FFFF ||
+        (codepoint >= 0xD800 && codepoint <= 0xDFFF)) {
+        return 0;
+    }
 
-    if ((c & 0xE0) == 0xC0)
-        return 2;       // 2-byte UTF-8 character
+    if (codepoint <= 0x7F) {
+        utf8[0] = (uint8_t)codepoint;
+        return 1;
+    }
 
-    if ((c & 0xF0) == 0xE0)
-        return 3;       // 3-byte UTF-8 character
+    if (codepoint <= 0x7FF) {
+        utf8[0] = (uint8_t)(0xC0 | (codepoint >> 6));
+        utf8[1] = (uint8_t)(0x80 | (codepoint & 0x3F));
+        return 2;
+    }
 
-    if ((c & 0xF8) == 0xF0)
-        return 4;       // 4-byte UTF-8 character
+    if (codepoint <= 0xFFFF) {
+        utf8[0] = (uint8_t)(0xE0 | (codepoint >> 12));
+        utf8[1] = (uint8_t)(0x80 | ((codepoint >> 6) & 0x3F));
+        utf8[2] = (uint8_t)(0x80 | (codepoint & 0x3F));
+        return 3;
+    }
 
-    return 0;           // Invalid UTF-8 leading byte
+    utf8[0] = (uint8_t)(0xF0 | (codepoint >> 18));
+    utf8[1] = (uint8_t)(0x80 | ((codepoint >> 12) & 0x3F));
+    utf8[2] = (uint8_t)(0x80 | ((codepoint >> 6) & 0x3F));
+    utf8[3] = (uint8_t)(0x80 | (codepoint & 0x3F));
+
+    return 4;
 }
 
 void rl_gui_glfw_char_callback(GLFWwindow *window, unsigned int codepoint)
 {
 	if(codepoint > 30){
-		uint32_t char_len = utf8_char_length((unsigned char)codepoint);
+		uint8_t c[4];
+		uint32_t char_len = codepoint_to_utf8(codepoint, c);
 		if(character_callback_buffer_index + char_len < RL_GUI_INPUT_MAX)
 		{
-			memcpy(&character_callback_buffer[character_callback_buffer_index], (unsigned char*)&codepoint, char_len); 
+			memcpy(&character_callback_buffer[character_callback_buffer_index], c, char_len); 
 			character_callback_buffer_index+=char_len;
 		}
 	}
 }
-#if 0
-void character_callback_erase_char()
-{
-	if(character_callback_buffer_index > 0)
-		character_callback_buffer_index--;
-}
-#endif 
-
 void
 character_callback_erase_buffer()
 {
