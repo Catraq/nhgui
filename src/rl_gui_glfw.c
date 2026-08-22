@@ -63,6 +63,8 @@ character_callback_erase_buffer()
 struct rl_gui_glfw_frame
 rl_gui_frame_create(GLFWwindow *window)
 {
+	glfwSetCharCallback(window, rl_gui_glfw_char_callback);
+
 	struct rl_gui_glfw_frame frame = {};
 
 	frame.backspace_key_last = GLFW_RELEASE;

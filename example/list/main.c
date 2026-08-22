@@ -300,7 +300,6 @@ int main(int args, char *argv[])
 	res_y = mode->height;
 
 
-	glfwSetCharCallback(window, rl_gui_glfw_char_callback);
 
 	glfwMakeContextCurrent(window);
 	
