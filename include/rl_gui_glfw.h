@@ -22,6 +22,10 @@ struct rl_gui_glfw_frame
 	uint32_t mouse_button_last;
 	uint32_t input_selected_new;
 
+	/* > 0 if true  */
+	uint32_t key_arrow_left_clicked_last;
+	uint32_t key_arrow_right_clicked_last;
+	
 	struct timeval time_curr_time;
 	float total_time;
 };

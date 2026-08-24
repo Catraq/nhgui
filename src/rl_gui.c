@@ -1268,8 +1268,24 @@ rl_gui_object_input_field(
 		input_buffer,
 		*input_buffer_length
 		);	
+	
+	uint32_t num_chars = utf8_offset_to_count(input_buffer, *input_buffer_length);
 
-	uint32_t overflow_offset = index_to_utf8_offset(input_buffer, overflow_count);
+	if(input->key_arrow_left_clicked > 0 && field->cursor_index > 0){
+		field->cursor_index += -1;
+	}else if(input->key_arrow_right_clicked > 0 && field->cursor_index < num_chars)
+	{
+		field->cursor_index += 1;
+	}	
+	
+	if(field->cursor_index <= overflow_count)
+	{
+		field->start_offset = overflow_count - field->cursor_index;
+	}	
+
+	uint32_t end_offset = index_to_utf8_offset(input_buffer, num_chars-field->start_offset);
+
+	uint32_t overflow_offset = index_to_utf8_offset(input_buffer, overflow_count-field->start_offset);
 	
 	uint32_t cursor_offset = index_to_utf8_offset(input_buffer, field->cursor_index);
 	
@@ -1286,7 +1302,7 @@ rl_gui_object_input_field(
 		uint32_t index_found = 0;
 		uint32_t i = 0;
 		uint32_t overflow_offset_iter  = overflow_offset;
-		while(overflow_offset_iter < *input_buffer_length)
+		while(overflow_offset_iter < end_offset)
 		{
 			uint32_t c = 0;
 			uint32_t c_inc = utf8_decode(&input_buffer[overflow_offset_iter], &c);
@@ -1316,9 +1332,9 @@ rl_gui_object_input_field(
 
 		if(index_found == 0)	
 		{
-			uint32_t j = utf8_offset_to_count(input_buffer, *input_buffer_length);
+			uint32_t j = utf8_offset_to_count(input_buffer, end_offset);
 
-			field->cursor_index = overflow_count + j;
+			field->cursor_index = overflow_count -field->start_offset + j;
 		}
 	}
 	else
@@ -1361,7 +1377,7 @@ rl_gui_object_input_field(
 	
 	cursor_offset = index_to_utf8_offset(input_buffer, field->cursor_index);
 	
-	if(cursor_offset < *input_buffer_length)
+	if(cursor_offset < end_offset)
 	{
 		/* Cursor is before last character. Make it the 
 		 * same size as the character it is hovering. */
@@ -1414,7 +1430,7 @@ rl_gui_object_input_field(
 			context, 
 			font, 
 			&input_buffer[overflow_offset],
-			*input_buffer_length - overflow_offset,
+			end_offset - overflow_offset,
 			&font_attribute,
 			input, 
 			result

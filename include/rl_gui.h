@@ -89,6 +89,10 @@ struct rl_gui_input
 	/* > 0 if the backspace key have been pressed */
 	uint32_t key_backspace_state;
 	
+	/* > 0 if true  */
+	uint32_t key_arrow_left_clicked;
+	uint32_t key_arrow_right_clicked;
+	
 	/* > 0 then deselect selected. */
 	uint32_t selected_new;
 
@@ -213,6 +217,11 @@ struct rl_gui_icon_blank
 
 struct rl_gui_object_input_field
 {
+	/* Used to change start index such that arrows keys can 
+	 * be used to move forward and backward in buffer 
+	 */
+	uint32_t start_offset;
+
 	/* Cursor position */
 	uint32_t cursor_index;
 

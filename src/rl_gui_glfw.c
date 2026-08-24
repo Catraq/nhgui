@@ -70,6 +70,9 @@ rl_gui_frame_create(GLFWwindow *window)
 	frame.backspace_key_last = GLFW_RELEASE;
 	frame.mouse_button_last = GLFW_RELEASE;	
 	
+	frame.key_arrow_left_clicked_last =  GLFW_RELEASE; 
+	frame.key_arrow_right_clicked_last =  GLFW_RELEASE; 
+
 	frame.total_time = 0.0f;
 
 	gettimeofday(&frame.time_curr_time, NULL);
@@ -106,6 +109,17 @@ rl_gui_glfw_frame_begin(struct rl_gui_glfw_frame *frame, GLFWwindow *window)
 	uint32_t backspace_key_state  = backspace_key == GLFW_RELEASE ?  frame->backspace_key_last != backspace_key ? 1 : 0 : 0;
 	frame->backspace_key_last = backspace_key;
 
+	int arrow_left = glfwGetKey(window, GLFW_KEY_LEFT);
+	uint32_t arrow_left_state = arrow_left == GLFW_RELEASE ?  frame->key_arrow_left_clicked_last != arrow_left ? 1 : 0 : 0;
+	frame->key_arrow_left_clicked_last =  arrow_left; 
+	
+	int arrow_right = glfwGetKey(window, GLFW_KEY_RIGHT);
+	uint32_t arrow_right_state = arrow_right == GLFW_RELEASE ?  frame->key_arrow_right_clicked_last != arrow_right? 1 : 0 : 0;
+	frame->key_arrow_right_clicked_last =  arrow_right; 
+
+
+
+
 	/* Get screen pixel size */
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
@@ -131,6 +145,8 @@ rl_gui_glfw_frame_begin(struct rl_gui_glfw_frame *frame, GLFWwindow *window)
 		.cursor_button_left = mouse_button_state,
 		.cursor_button_left_press = mouse_button_left_pressed, 
 		.key_backspace_state = backspace_key_state,
+		.key_arrow_left_clicked = arrow_left_state,
+		.key_arrow_right_clicked = arrow_right_state,
 		.deltatime_sec = deltatime,
 		.time_sec = frame->total_time,
 		.selected_new = frame->input_selected_new,

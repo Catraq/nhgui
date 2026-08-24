@@ -39,6 +39,5 @@ target_include_directories(rl_gui PUBLIC "include/")
 
 add_subdirectory(example/list)
 add_subdirectory(example/simple)
-add_subdirectory(example/scroll)
 
 
