@@ -705,7 +705,7 @@ const GLuint rl_gui_surface_quad_vertices_count = sizeof(rl_gui_surface_quad_ver
 
 const GLuint rl_gui_surface_quad_indices[] = {
 	1, 0, 2,
-	2, 0, 3
+	3, 0, 2
 };
 
 const GLuint rl_gui_surface_quad_indices_count = sizeof(rl_gui_surface_quad_indices)/sizeof(rl_gui_surface_quad_indices[0]);
